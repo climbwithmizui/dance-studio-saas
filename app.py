@@ -110,6 +110,7 @@ def create_seedance_job(
     prompt: str,
     model: str,
     api_key: str,
+    mode: str = "image-to-video",
     image_url: str | None = None,
     ref_url: str | None = None,
     resolution: str = "480p",
@@ -117,6 +118,7 @@ def create_seedance_job(
     """Seedance にダンス動画生成ジョブを作成し、レスポンス JSON を返す。
 
     api_key:     ユーザーがフォームで入力した EvoLink API キー。
+    mode:        生成モード（image-to-video / reference-to-video）。
     image_url:   image-to-video 用のキャラクター画像 URL（アップロード物）。
     ref_url:     reference-to-video 用の参照ダンス動画 URL（アップロード物）。
     resolution:  出力解像度（720p / 1080p）。
@@ -137,12 +139,13 @@ def create_seedance_job(
         "generate_audio": False,  # 曲は後工程で合成する
     }
 
-    # image-to-video / reference-to-video の場合は素材（アップロード優先→config）を付与
-    if "image-to-video" in model:
+    # 選択されたモードに応じて素材（アップロード優先→config）を排他的に付与する。
+    # アップロードも config も無い場合は、対応する payload を追加しない。
+    if mode == "image-to-video":
         img = image_url or CONFIG.get("seedance_image_url")
         if img:
             payload["image"] = img
-    if "reference-to-video" in model:
+    elif mode == "reference-to-video":
         ref = ref_url or CONFIG.get("seedance_ref_url")
         if ref:
             payload["reference_video"] = ref
@@ -243,7 +246,7 @@ def upload():
     # Seedance にジョブ投入（ユーザー自身の API キーを使用）
     try:
         result = create_seedance_job(
-            prompt, model, api_key, image_url, ref_url, resolution
+            prompt, model, api_key, mode, image_url, ref_url, resolution
         )
     except Exception as first_err:  # noqa: BLE001
         # reference-to-video で失敗した場合は、参照動画を外して
@@ -257,7 +260,7 @@ def upload():
             ref_url = None
             try:
                 result = create_seedance_job(
-                    prompt, model, api_key, image_url, ref_url, resolution
+                    prompt, model, api_key, mode, image_url, ref_url, resolution
                 )
             except requests.HTTPError as e:
                 body = e.response.text if e.response is not None else str(e)
