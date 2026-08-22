@@ -1,0 +1,468 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, viewport-fit=cover" />
+  <meta name="theme-color" content="#eaf1fb" />
+  <title>Dance Studio — 曲からダンス動画</title>
+
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@400;500;700;900&display=swap" rel="stylesheet" />
+
+  <style>
+    :root {
+      --blue: #5b9df9;
+      --blue-light: #9ec8fb;
+      --blue-deep: #3f7fe0;
+      --silver: #c9d3e0;
+      --ink: #2a3441;
+      --muted: #7b8797;
+      --line: rgba(120, 150, 190, .22);
+      --glass: rgba(255, 255, 255, .55);
+      --glass-strong: rgba(255, 255, 255, .78);
+      --shadow: 0 18px 50px -18px rgba(70, 110, 170, .45);
+      --radius: 22px;
+    }
+
+    * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+
+    html, body { width: 100%; overflow-x: hidden; }
+
+    body {
+      margin: 0;
+      font-family: "Noto Sans JP", -apple-system, BlinkMacSystemFont, sans-serif;
+      color: var(--ink);
+      min-height: 100dvh;
+      padding: 28px 16px calc(32px + env(safe-area-inset-bottom));
+      background:
+        radial-gradient(1100px 600px at 80% -10%, #ffffff 0%, rgba(255,255,255,0) 60%),
+        radial-gradient(900px 500px at -10% 10%, #e7f0ff 0%, rgba(231,240,255,0) 55%),
+        linear-gradient(160deg, #fbfdff 0%, #eef3fa 45%, #e4ecf7 100%);
+      background-attachment: fixed;
+    }
+
+    /* ふわっと浮かぶ光の玉（軽さ・清潔感の演出） */
+    body::before, body::after {
+      content: ""; position: fixed; border-radius: 50%; z-index: 0;
+      filter: blur(50px); opacity: .55; pointer-events: none;
+    }
+    body::before { width: 300px; height: 300px; top: -90px; right: -30px;
+      background: radial-gradient(circle, #bcd8ff, transparent 70%); }
+    body::after { width: 340px; height: 340px; bottom: -140px; left: -40px;
+      background: radial-gradient(circle, #d7e2f2, transparent 70%); }
+
+    /* 中央寄せラッパー（flex 依存をやめ、margin:auto で確実にセンタリング） */
+    .page { position: relative; z-index: 1; width: 100%; max-width: 440px; margin: 0 auto; }
+
+    header { text-align: center; margin: 6px 0 22px; position: relative; z-index: 1; }
+    .mascot {
+      display: block; margin: 0 auto 12px;
+      width: 60px; height: 60px; object-fit: contain;
+      filter: drop-shadow(0 8px 16px rgba(80,130,220,.35));
+    }
+    header h1 {
+      font-size: 24px; font-weight: 900; margin: 0 0 6px; letter-spacing: .01em;
+      background: linear-gradient(90deg, #3f7fe0, #7bb0f5);
+      -webkit-background-clip: text; background-clip: text; -webkit-text-fill-color: transparent;
+    }
+    header p { color: var(--muted); font-size: 13px; margin: 0; font-weight: 500; }
+
+    .card {
+      position: relative; z-index: 1;
+      width: 100%;
+      background: var(--glass);
+      backdrop-filter: blur(22px) saturate(160%);
+      -webkit-backdrop-filter: blur(22px) saturate(160%);
+      border: 1px solid rgba(255,255,255,.75);
+      border-radius: var(--radius);
+      padding: 24px 22px 26px;
+      box-shadow: var(--shadow);
+    }
+    /* 上辺の光沢ライン */
+    .card::before {
+      content: ""; position: absolute; inset: 0; border-radius: var(--radius); pointer-events: none;
+      background: linear-gradient(180deg, rgba(255,255,255,.6), rgba(255,255,255,0) 30%);
+      mix-blend-mode: screen;
+    }
+
+    label {
+      display: block; font-size: 12.5px; font-weight: 700; color: var(--ink);
+      margin: 18px 0 8px; letter-spacing: .02em;
+    }
+    label:first-of-type { margin-top: 2px; }
+
+    .field {
+      width: 100%; font-family: inherit; font-size: 15px; color: var(--ink);
+      background: var(--glass-strong);
+      border: 1px solid var(--line);
+      border-radius: 14px; padding: 14px 15px;
+      transition: border-color .2s, box-shadow .2s, background .2s;
+      box-shadow: inset 0 1px 2px rgba(120,150,190,.12);
+    }
+    .field::placeholder { color: #9aa6b6; }
+    .field:focus {
+      outline: none; border-color: var(--blue);
+      background: #fff;
+      box-shadow: 0 0 0 4px rgba(91,157,249,.16), inset 0 1px 2px rgba(120,150,190,.1);
+    }
+    textarea.field { min-height: 72px; resize: vertical; line-height: 1.6; }
+    select.field {
+      appearance: none;
+      background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='14' height='14' viewBox='0 0 24 24' fill='none' stroke='%235b9df9' stroke-width='3' stroke-linecap='round' stroke-linejoin='round'><polyline points='6 9 12 15 18 9'/></svg>");
+      background-repeat: no-repeat; background-position: right 16px center; padding-right: 42px;
+    }
+
+    /* API キー欄：鍵アイコン付きのスタイリッシュ入力 */
+    .key-wrap { position: relative; }
+    .key-wrap .key-ico {
+      position: absolute; left: 14px; top: 50%; transform: translateY(-50%);
+      font-size: 15px; opacity: .5; pointer-events: none;
+    }
+    #api_key { padding-left: 40px; letter-spacing: .06em; }
+
+    .hint { font-size: 11px; color: var(--muted); margin: 8px 3px 0; line-height: 1.6; }
+    .hint a { color: var(--blue-deep); font-weight: 700; text-decoration: none; }
+
+    input[type=file] { display: none; }
+    .drop {
+      display: flex; flex-direction: column; align-items: center; gap: 8px;
+      border: 1.5px dashed rgba(91,157,249,.45);
+      border-radius: 16px; padding: 26px 16px; text-align: center;
+      color: var(--muted); font-size: 14px; font-weight: 500; cursor: pointer;
+      background: linear-gradient(180deg, rgba(255,255,255,.7), rgba(233,242,255,.55));
+      transition: .2s;
+    }
+    .drop .drop-ico { font-size: 26px; }
+    .drop:active { transform: scale(.99); }
+    .drop.has-file {
+      border-style: solid; border-color: var(--blue); color: var(--ink);
+      background: linear-gradient(180deg, #ffffff, #eaf3ff);
+      font-weight: 700;
+    }
+
+    /* メインのアップロード/生成ボタン：薄いブルーのグラデ、大きくタップしやすい */
+    .btn-primary {
+      position: relative; overflow: hidden;
+      width: 100%; margin-top: 26px; padding: 18px;
+      font-family: inherit; font-size: 17px; font-weight: 700; letter-spacing: .03em;
+      color: #fff; border: none; border-radius: 16px; cursor: pointer;
+      background: linear-gradient(135deg, #7cb4fb 0%, #5b9df9 55%, #4f8ff2 100%);
+      box-shadow: 0 14px 28px -10px rgba(79,143,242,.7), inset 0 1px 0 rgba(255,255,255,.5);
+      transition: transform .12s, box-shadow .2s, filter .2s;
+    }
+    .btn-primary::after {
+      content: ""; position: absolute; top: 0; left: 0; right: 0; height: 48%;
+      background: linear-gradient(180deg, rgba(255,255,255,.35), rgba(255,255,255,0));
+      pointer-events: none;
+    }
+    .btn-primary:not(:disabled):active { transform: translateY(1px) scale(.99); box-shadow: 0 8px 18px -10px rgba(79,143,242,.7); }
+    .btn-primary:disabled { filter: grayscale(.15) brightness(.98); opacity: .8; cursor: default; }
+
+    /* ステータス + スピナー */
+    .status-row {
+      display: none; align-items: center; justify-content: center; gap: 10px;
+      margin-top: 20px; font-size: 14px; font-weight: 500; color: var(--ink); min-height: 22px;
+    }
+    .status-row.show { display: flex; }
+    .status-row.error { color: #d6455d; }
+    .spinner {
+      width: 20px; height: 20px; border-radius: 50%;
+      border: 2.5px solid rgba(91,157,249,.25); border-top-color: var(--blue);
+      animation: spin .8s linear infinite; flex: none; display: none;
+    }
+    .spinner.show { display: block; }
+    @keyframes spin { to { transform: rotate(360deg); } }
+
+    /* プログレスバー（シマー付き） */
+    .bar {
+      height: 8px; border-radius: 6px; overflow: hidden; margin-top: 14px; display: none;
+      background: rgba(120,150,190,.18);
+    }
+    .bar.show { display: block; }
+    .bar > i {
+      display: block; height: 100%; width: 0; border-radius: 6px;
+      background: linear-gradient(90deg, #8fc0fc, #5b9df9);
+      transition: width .5s ease;
+      position: relative; overflow: hidden;
+    }
+    .bar > i::after {
+      content: ""; position: absolute; inset: 0;
+      background: linear-gradient(90deg, transparent, rgba(255,255,255,.6), transparent);
+      transform: translateX(-100%); animation: shimmer 1.3s infinite;
+    }
+    @keyframes shimmer { 100% { transform: translateX(100%); } }
+
+    video {
+      width: 100%; border-radius: 16px; margin-top: 18px; display: none;
+      box-shadow: var(--shadow); background: #000;
+    }
+    video.show { display: block; }
+
+    .btn-download {
+      display: none; text-align: center; text-decoration: none; margin-top: 14px;
+      padding: 16px; font-size: 16px; font-weight: 700; letter-spacing: .03em; color: var(--blue-deep);
+      border-radius: 16px;
+      background: linear-gradient(135deg, #ffffff, #e9f2ff);
+      border: 1px solid rgba(91,157,249,.4);
+      box-shadow: 0 10px 22px -12px rgba(79,143,242,.55), inset 0 1px 0 rgba(255,255,255,.8);
+      transition: transform .12s;
+    }
+    .btn-download.show { display: block; }
+    .btn-download:active { transform: scale(.99); }
+
+    /* STEP バッジ付きの見出し（迷わせない導線） */
+    .step {
+      display: flex; align-items: center; gap: 9px;
+      margin: 22px 0 10px;
+    }
+    .step:first-of-type { margin-top: 2px; }
+    .step .num {
+      flex: none; display: inline-flex; align-items: center;
+      font-size: 10.5px; font-weight: 900; letter-spacing: .08em;
+      color: #fff; padding: 4px 9px; border-radius: 999px;
+      background: linear-gradient(135deg, #7cb4fb, #4f8ff2);
+      box-shadow: 0 4px 10px -4px rgba(79,143,242,.7);
+    }
+    .step .txt { font-size: 13.5px; font-weight: 700; color: var(--ink); }
+    .step .opt { font-size: 11px; font-weight: 600; color: var(--muted); }
+
+    /* 無料登録の誘導リンク（強調） */
+    .signup {
+      display: flex; align-items: center; gap: 6px;
+      margin: 10px 3px 0; font-size: 12px; font-weight: 700;
+      color: var(--blue-deep); text-decoration: none;
+    }
+    .signup:active { opacity: .7; }
+    .signup .arrow { transition: transform .15s; }
+    .signup:hover .arrow { transform: translateX(3px); }
+
+    /* 詳細設定アコーディオン */
+    .adv { margin-top: 22px; border-top: 1px dashed var(--line); padding-top: 6px; }
+    .adv > summary {
+      list-style: none; cursor: pointer; user-select: none;
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 14px 2px; font-size: 13px; font-weight: 700; color: var(--muted);
+    }
+    .adv > summary::-webkit-details-marker { display: none; }
+    .adv > summary .chev { transition: transform .2s; font-size: 12px; color: var(--blue); }
+    .adv[open] > summary .chev { transform: rotate(180deg); }
+    .adv[open] > summary { color: var(--ink); }
+    .adv .adv-body { padding: 2px 2px 6px; }
+
+    footer { margin-top: 22px; font-size: 11px; color: #9aa6b6; text-align: center; z-index: 1; }
+  </style>
+</head>
+<body>
+ <div class="page">
+  <header>
+    <img class="mascot" src="{{ url_for('static', filename='mascot.png') }}" alt="マスコット"
+         onerror="this.style.display='none'" />
+    <h1>Dance Studio</h1>
+    <p>曲をアップするだけで、AIがダンス動画を自動生成します</p>
+  </header>
+
+  <div class="card">
+    <form id="form">
+      <!-- STEP 1 : API キー -->
+      <div class="step"><span class="num">STEP 1</span><span class="txt">EvoLink API キー</span></div>
+      <div class="key-wrap">
+        <span class="key-ico">🔑</span>
+        <input class="field" type="password" name="api_key" id="api_key" placeholder="sk-..." autocomplete="off" required />
+      </div>
+      <a class="signup" href="https://evolink.ai" target="_blank" rel="noopener">EvoLinkアカウントを持っていない方はこちらで無料登録 <span class="arrow">→</span></a>
+      <p class="hint">キーはこの端末にのみ保存され、生成時にのみ使用されます。</p>
+
+      <!-- STEP 2 : キャラクター画像（必須） -->
+      <div class="step"><span class="num">STEP 2</span><span class="txt">キャラクター画像</span><span class="opt">必須</span></div>
+      <div class="drop" id="drop-image">
+        <span class="drop-ico">🖼️</span>
+        <span id="drop-image-text">キャラクター画像を選択<br><small>PNG / JPG</small></span>
+      </div>
+      <input type="file" id="image" name="image" accept="image/png,image/jpeg" required />
+
+      <!-- STEP 3 : 参照ダンス動画（任意） -->
+      <div class="step"><span class="num">STEP 3</span><span class="txt">参照ダンス動画</span><span class="opt">任意</span></div>
+      <div class="drop" id="drop-ref">
+        <span class="drop-ico">🎬</span>
+        <span id="drop-ref-text">参照ダンス動画を選択<br><small>MP4</small></span>
+      </div>
+      <input type="file" id="reference" name="reference" accept="video/mp4" />
+      <p class="hint">動画を入れると、その振り付けを参照して生成します（reference-to-video）。無い場合は画像だけで生成します（image-to-video）。</p>
+
+      <!-- STEP 4 : 曲（任意） -->
+      <div class="step"><span class="num">STEP 4</span><span class="txt">曲をアップロード</span><span class="opt">任意</span></div>
+      <div class="drop" id="drop">
+        <span class="drop-ico">🎵</span>
+        <span id="drop-text">タップして曲を選択<br><small>mp3 / wav / m4a / aac ...</small></span>
+      </div>
+      <input type="file" id="song" name="song" accept="audio/*" />
+
+      <!-- 詳細設定（初心者はここを開かなくてOK） -->
+      <details class="adv">
+        <summary><span>⚙️ 詳細設定（任意）</span><span class="chev">▼</span></summary>
+        <div class="adv-body">
+          <label>スタイル / 演出</label>
+          <textarea class="field" name="prompt" placeholder="例: 明るいスタジオでキレのあるヒップホップ、フルボディ"></textarea>
+
+          <label>解像度</label>
+          <select class="field" name="resolution">
+            <option value="720p">720p（標準・生成が速い）</option>
+            <option value="1080p">1080p（高画質・時間がかかる）</option>
+          </select>
+        </div>
+      </details>
+
+      <button type="submit" class="btn-primary" id="submit">✨ ダンス動画を生成</button>
+    </form>
+
+    <div class="status-row" id="status-row">
+      <span class="spinner" id="spinner"></span>
+      <span id="status"></span>
+    </div>
+    <div class="bar" id="bar"><i></i></div>
+    <video id="result" controls playsinline></video>
+    <a class="btn-download" id="download" download>⬇️ 完成MP4をダウンロード</a>
+  </div>
+
+  <footer>CLIMB with MIZUI © 2026</footer>
+ </div>
+
+  <script>
+    const drop = document.getElementById('drop');
+    const dropText = document.getElementById('drop-text');
+    const fileInput = document.getElementById('song');
+    const form = document.getElementById('form');
+    const submit = document.getElementById('submit');
+    const statusRow = document.getElementById('status-row');
+    const statusEl = document.getElementById('status');
+    const spinner = document.getElementById('spinner');
+    const bar = document.getElementById('bar');
+    const barFill = bar.querySelector('i');
+    const resultVideo = document.getElementById('result');
+    const downloadBtn = document.getElementById('download');
+    const apiKeyInput = document.getElementById('api_key');
+
+    // ---- UI ヘルパー ----
+    function setStatus(text, { spin = false, error = false } = {}) {
+      statusEl.textContent = text;
+      statusRow.classList.toggle('show', !!text);
+      statusRow.classList.toggle('error', error);
+      spinner.classList.toggle('show', spin);
+    }
+    function showBar(v) { bar.classList.toggle('show', v); }
+    function setProgress(pct) { barFill.style.width = pct + '%'; }
+
+    // API キーをブラウザに記憶（毎回入力しなくて済むように）
+    apiKeyInput.value = localStorage.getItem('evolink_api_key') || '';
+    apiKeyInput.addEventListener('change', () => {
+      localStorage.setItem('evolink_api_key', apiKeyInput.value.trim());
+    });
+
+    drop.addEventListener('click', () => fileInput.click());
+    fileInput.addEventListener('change', () => {
+      if (fileInput.files.length) {
+        dropText.innerHTML = '🎵 ' + fileInput.files[0].name;
+        drop.classList.add('has-file');
+      }
+    });
+
+    // 素材アップロード（画像 / 参照動画）。参照動画があれば自動で reference-to-video。
+    const imageInput = document.getElementById('image');
+    const refInput = document.getElementById('reference');
+
+    function bindDrop(dropEl, inputEl, textEl, icon) {
+      dropEl.addEventListener('click', () => inputEl.click());
+      inputEl.addEventListener('change', () => {
+        if (inputEl.files.length) {
+          textEl.innerHTML = icon + ' ' + inputEl.files[0].name;
+          dropEl.classList.add('has-file');
+        }
+      });
+    }
+    bindDrop(document.getElementById('drop-image'), imageInput, document.getElementById('drop-image-text'), '🖼️');
+    bindDrop(document.getElementById('drop-ref'), refInput, document.getElementById('drop-ref-text'), '🎬');
+
+    let pollTimer = null;
+
+    form.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      if (!apiKeyInput.value.trim()) { setStatus('STEP 1: EvoLink API キーを入力してください', { error: true }); return; }
+      if (!imageInput.files.length) { setStatus('STEP 2: キャラクター画像（PNG / JPG）を選択してください', { error: true }); return; }
+      localStorage.setItem('evolink_api_key', apiKeyInput.value.trim());
+
+      submit.disabled = true;
+      submit.textContent = '送信中…';
+      resultVideo.classList.remove('show');
+      downloadBtn.classList.remove('show');
+      showBar(true);
+      setProgress(6);
+      setStatus('Seedance に送信しています…', { spin: true });
+
+      try {
+        const res = await fetch('/upload', { method: 'POST', body: new FormData(form) });
+        const data = await res.json();
+        if (!res.ok) throw new Error(data.error || '送信に失敗しました');
+
+        submit.textContent = '生成中…';
+        setStatus('AI がダンスを生成しています…', { spin: true });
+        poll(data.task_id);
+      } catch (err) {
+        setStatus('⚠️ ' + err.message, { error: true });
+        showBar(false);
+        submit.disabled = false;
+        submit.textContent = '✨ ダンス動画を生成';
+      }
+    });
+
+    function poll(taskId) {
+      clearInterval(pollTimer);
+      pollTimer = setInterval(async () => {
+        try {
+          const res = await fetch('/status/' + taskId);
+          const d = await res.json();
+          if (d.progress != null) setProgress(Math.max(6, Math.min(88, d.progress)));
+
+          if (d.status === 'completed' && d.video_url) {
+            clearInterval(pollTimer);
+            setProgress(90);
+            setStatus('動画に曲を合成しています…', { spin: true });
+            await finalize(taskId);
+          } else if (d.status === 'failed') {
+            clearInterval(pollTimer);
+            setStatus('⚠️ 生成に失敗しました: ' + (d.error || ''), { error: true });
+            showBar(false);
+            submit.disabled = false;
+            submit.textContent = '✨ ダンス動画を生成';
+          } else {
+            setStatus('AI がダンスを生成しています…', { spin: true });
+          }
+        } catch (err) {
+          setStatus('状態取得エラー: ' + err.message, { error: true });
+        }
+      }, 4000);
+    }
+
+    async function finalize(taskId) {
+      try {
+        const res = await fetch('/finalize/' + taskId, { method: 'POST' });
+        const d = await res.json();
+        if (!res.ok) throw new Error(d.error || '合成に失敗しました');
+
+        setProgress(100);
+        setStatus('✅ 完成しました！', { spin: false });
+        resultVideo.src = d.download_url;
+        resultVideo.classList.add('show');
+        downloadBtn.href = d.download_url;
+        downloadBtn.classList.add('show');
+      } catch (err) {
+        setStatus('⚠️ ' + err.message, { error: true });
+        showBar(false);
+      } finally {
+        submit.disabled = false;
+        submit.textContent = '🔁 もう一度生成';
+      }
+    }
+  </script>
+</body>
+</html>
