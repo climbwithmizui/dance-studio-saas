@@ -388,4 +388,4 @@ def uploaded_file(name):
 if __name__ == "__main__":
     # スマホから同じ Wi-Fi で開けるよう 0.0.0.0 で待受
     port = int(os.environ.get("PORT", 5055))
-    app.run(host="0.0.0.0", port=port, debug=True)
+    app.run(host="0.0.0.0", port=port, debug=False)
