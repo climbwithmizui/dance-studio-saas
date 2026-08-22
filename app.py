@@ -45,7 +45,7 @@ MAX_CONTENT_LENGTH = 200 * 1024 * 1024  # 200MB（参照動画のMP4に対応）
 EVOLINK_BASE = "https://api.evolink.ai/v1"
 
 # Seedance の動画生成に使うデフォルト（config から上書き可能）
-DEFAULT_MODEL = "seedance-2.0-image-to-video"
+DEFAULT_MODEL = "seedance-2.0-mini-image-to-video"
 DEFAULT_PROMPT = (
     "A person dancing energetically to the music, full body, smooth dynamic "
     "motion, rhythmic choreography, studio lighting, cinematic"
@@ -108,7 +108,7 @@ def create_seedance_job(
     api_key: str,
     image_url: str | None = None,
     ref_url: str | None = None,
-    resolution: str = "720p",
+    resolution: str = "480p",
 ) -> dict:
     """Seedance にダンス動画生成ジョブを作成し、レスポンス JSON を返す。
 
@@ -128,7 +128,7 @@ def create_seedance_job(
         "model": model,
         "prompt": prompt,
         "duration": int(CONFIG.get("seedance_duration", 8)),
-        "quality": resolution or "720p",
+        "quality": resolution or "480p",
         "aspect_ratio": "9:16",  # スマホ縦向き
         "generate_audio": False,  # 曲は後工程で合成する
     }
@@ -234,7 +234,7 @@ def upload():
         ), 400
 
     mode = "reference-to-video" if ref_url else "image-to-video"
-    model = f"seedance-2.0-{mode}"
+    model = f"seedance-2.0-mini-{mode}"
 
     # Seedance にジョブ投入（ユーザー自身の API キーを使用）
     try:
