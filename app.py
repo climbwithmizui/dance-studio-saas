@@ -155,6 +155,7 @@ def create_seedance_job(
         if ref:
             payload["reference_video"] = ref
 
+    print(f"[EvoLink payload] image={payload.get('image')}, reference_video={payload.get('reference_video')}, model={payload.get('model')}, prompt={payload.get('prompt')[:50]}", flush=True)
     resp = requests.post(
         f"{EVOLINK_BASE}/videos/generations",
         headers=headers,
