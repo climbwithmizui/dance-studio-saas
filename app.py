@@ -149,13 +149,16 @@ def create_seedance_job(
     if mode == "image-to-video":
         img = image_url or CONFIG.get("seedance_image_url")
         if img:
-            payload["image"] = img
+            payload["image_urls"] = [img]
     elif mode == "reference-to-video":
+        img = image_url or CONFIG.get("seedance_image_url")
         ref = ref_url or CONFIG.get("seedance_ref_url")
+        if img:
+            payload["image_urls"] = [img]
         if ref:
-            payload["reference_video"] = ref
+            payload["video_urls"] = [ref]
 
-    print(f"[EvoLink payload] image={payload.get('image')}, reference_video={payload.get('reference_video')}, model={payload.get('model')}, prompt={payload.get('prompt')[:50]}", flush=True)
+    print(f"[EvoLink payload] image_urls={payload.get('image_urls')}, video_urls={payload.get('video_urls')}, model={payload.get('model')}, prompt={payload.get('prompt')[:50]}", flush=True)
     resp = requests.post(
         f"{EVOLINK_BASE}/videos/generations",
         headers=headers,
