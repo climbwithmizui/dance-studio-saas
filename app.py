@@ -51,6 +51,11 @@ DEFAULT_PROMPT = (
     "A person dancing energetically to the music, full body, smooth dynamic "
     "motion, rhythmic choreography, studio lighting, cinematic"
 )
+# reference-to-video 用のプロンプト（@image1=キャラ画像 / @video1=参照ダンス動画）
+REFERENCE_PROMPT = (
+    "@image1 is the character. Make the character dance following the motion "
+    "style of @video1. Full body visible, 9:16 vertical, studio lighting."
+)
 
 
 def load_config() -> dict:
@@ -226,8 +231,9 @@ def upload():
         stored_name = f"{uuid.uuid4().hex}.{ext}"
         file.save(UPLOAD_DIR / stored_name)
 
-    prompt = request.form.get("prompt", "").strip() or DEFAULT_PROMPT
-    resolution = request.form.get("resolution", "").strip() or "720p"
+    # ユーザーが入力した値（image-to-video 時 / フォールバック時に使う）
+    user_prompt = request.form.get("prompt", "").strip()
+    user_resolution = request.form.get("resolution", "").strip() or "480p"
 
     # 素材を保存して URL 化。
     #   画像 … 必須（image-to-video のベース）
@@ -240,8 +246,19 @@ def upload():
             {"error": "キャラクター画像（PNG / JPG）をアップロードしてください"}
         ), 400
 
-    mode = "reference-to-video" if ref_url else "image-to-video"
-    model = f"seedance-2.0-mini-{mode}"
+    # 参照動画の有無でモデル・プロンプト・解像度を自動切り替えする。
+    if ref_url:
+        # 参照動画あり: reference-to-video（720p 強制、専用プロンプト）
+        mode = "reference-to-video"
+        model = "seedance-2.0-reference-to-video"
+        prompt = REFERENCE_PROMPT
+        resolution = "720p"
+    else:
+        # 参照動画なし: mini image-to-video（解像度はユーザー選択のまま）
+        mode = "image-to-video"
+        model = "seedance-2.0-mini-image-to-video"
+        prompt = user_prompt or DEFAULT_PROMPT
+        resolution = user_resolution
 
     # Seedance にジョブ投入（ユーザー自身の API キーを使用）
     try:
@@ -255,8 +272,12 @@ def upload():
             image_url or CONFIG.get("seedance_image_url")
         )
         if can_fallback:
+            # reference-to-video → image-to-video に切り替えるので、
+            # プロンプト・解像度も image-to-video 用に戻す。
             mode = "image-to-video"
-            model = f"seedance-2.0-mini-{mode}"
+            model = "seedance-2.0-mini-image-to-video"
+            prompt = user_prompt or DEFAULT_PROMPT
+            resolution = user_resolution
             ref_url = None
             try:
                 result = create_seedance_job(
