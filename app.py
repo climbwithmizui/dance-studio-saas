@@ -25,6 +25,7 @@ from flask import (
     send_from_directory,
     url_for,
 )
+from werkzeug.middleware.proxy_fix import ProxyFix
 from werkzeug.utils import secure_filename
 
 # ----------------------------------------------------------------------------
@@ -76,6 +77,9 @@ JOBS: dict[str, dict] = {}
 # ----------------------------------------------------------------------------
 # static/ を /static/ で配信（mascot.png などをブラウザから参照できるようにする）
 app = Flask(__name__, static_folder="static", static_url_path="/static")
+# Render 等のリバースプロキシ配下で X-Forwarded-Proto/Host を尊重し、
+# url_for(_external=True) が正しい https:// の外部URLを生成できるようにする。
+app.wsgi_app = ProxyFix(app.wsgi_app, x_proto=1, x_host=1)
 app.config["MAX_CONTENT_LENGTH"] = MAX_CONTENT_LENGTH
 
 
@@ -241,11 +245,38 @@ def upload():
         result = create_seedance_job(
             prompt, model, api_key, image_url, ref_url, resolution
         )
-    except requests.HTTPError as e:
-        body = e.response.text if e.response is not None else str(e)
-        return jsonify({"error": f"Seedance へのリクエストに失敗しました: {body}"}), 502
-    except Exception as e:  # noqa: BLE001
-        return jsonify({"error": str(e)}), 500
+    except Exception as first_err:  # noqa: BLE001
+        # reference-to-video で失敗した場合は、参照動画を外して
+        # image-to-video にフォールバックして再試行する。
+        can_fallback = ref_url and (
+            image_url or CONFIG.get("seedance_image_url")
+        )
+        if can_fallback:
+            mode = "image-to-video"
+            model = f"seedance-2.0-mini-{mode}"
+            ref_url = None
+            try:
+                result = create_seedance_job(
+                    prompt, model, api_key, image_url, ref_url, resolution
+                )
+            except requests.HTTPError as e:
+                body = e.response.text if e.response is not None else str(e)
+                return jsonify(
+                    {"error": f"Seedance へのリクエストに失敗しました: {body}"}
+                ), 502
+            except Exception as e:  # noqa: BLE001
+                return jsonify({"error": str(e)}), 500
+        elif isinstance(first_err, requests.HTTPError):
+            body = (
+                first_err.response.text
+                if first_err.response is not None
+                else str(first_err)
+            )
+            return jsonify(
+                {"error": f"Seedance へのリクエストに失敗しました: {body}"}
+            ), 502
+        else:
+            return jsonify({"error": str(first_err)}), 500
 
     task_id = result.get("id") or result.get("task_id")
     JOBS[task_id] = {
