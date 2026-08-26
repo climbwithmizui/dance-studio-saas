@@ -61,7 +61,7 @@ EVOLINK_BASE = "https://api.evolink.ai/v1"
 # Stripe（サブスク課金）。キーは環境変数から読み込む。
 stripe.api_key = os.environ.get("STRIPE_SECRET_KEY")
 STRIPE_WEBHOOK_SECRET = os.environ.get("STRIPE_WEBHOOK_SECRET")
-PRICE_ID = "price_1U8bZ1L0dCdWhFUqJLP5ih16"
+PRICE_ID = "price_1U8e3yL0dCdWhFUqtAeONqmu"
 
 # Seedance の動画生成に使うデフォルト（config から上書き可能）
 DEFAULT_MODEL = "seedance-2.0-mini-image-to-video"
