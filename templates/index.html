@@ -280,6 +280,7 @@
         <span id="drop-image-text">キャラクター画像を選択<br><small>PNG / JPG</small></span>
       </div>
       <input type="file" id="image" name="image" accept="image/png,image/jpeg" required />
+      <p class="hint">生成するキャラの画像です。</p>
 
       <!-- STEP 3 : 参照ダンス動画（任意） -->
       <div class="step"><span class="num">STEP 3</span><span class="txt">参照ダンス動画</span><span class="opt">任意</span></div>
@@ -288,7 +289,9 @@
         <span id="drop-ref-text">参照ダンス動画を選択<br><small>MP4</small></span>
       </div>
       <input type="file" id="reference" name="reference" accept="video/mp4" />
-      <p class="hint">動画を入れると、その振り付けを参照して生成します（reference-to-video）。無い場合は画像だけで生成します（image-to-video）。</p>
+      <p class="hint">モーションを参考にしたい動画（10秒以内のMP4）を入れると、その振り付けを参照して生成します。<br>
+        ・参照動画あり → 720p 自動設定・クレジット約150消費<br>
+        ・参照動画なし → 480p・クレジット約10消費</p>
 
       <!-- STEP 4 : 曲（任意） -->
       <div class="step"><span class="num">STEP 4</span><span class="txt">曲をアップロード</span><span class="opt">任意</span></div>
@@ -297,6 +300,7 @@
         <span id="drop-text">タップして曲を選択<br><small>mp3 / wav / m4a / aac ...</small></span>
       </div>
       <input type="file" id="song" name="song" accept="audio/*" />
+      <p class="hint">アップすると音源入り動画に仕上がります。</p>
 
       <!-- 詳細設定（初心者はここを開かなくてOK） -->
       <details class="adv">

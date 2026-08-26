@@ -138,7 +138,7 @@ def create_seedance_job(
     payload = {
         "model": model,
         "prompt": prompt,
-        "duration": int(CONFIG.get("seedance_duration", 8)),
+        "duration": int(CONFIG.get("seedance_duration", 10)),
         "quality": resolution or "480p",
         "aspect_ratio": "9:16",  # スマホ縦向き
         "generate_audio": False,  # 曲は後工程で合成する
