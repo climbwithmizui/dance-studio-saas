@@ -271,6 +271,17 @@
     }
 
     footer { margin-top: 22px; font-size: 11px; color: #9aa6b6; text-align: center; z-index: 1; }
+
+    /* サブスク登録パネル（未課金ユーザー向け） */
+    .subscribe-panel { text-align: center; padding: 6px 4px 4px; }
+    .subscribe-panel .sub-hero { font-size: 44px; line-height: 1; margin-bottom: 8px; }
+    .sub-title { font-size: 18px; font-weight: 900; color: var(--ink); margin: 6px 0 10px; }
+    .sub-desc { font-size: 13px; color: var(--muted); line-height: 1.75; margin: 0 0 18px; }
+    .sub-price { margin: 6px 0 2px; }
+    .sub-price .yen { font-size: 32px; font-weight: 900; color: var(--blue-deep); }
+    .sub-price .per { font-size: 14px; color: var(--muted); font-weight: 700; margin-left: 3px; }
+    .sub-note { font-size: 12px; color: var(--muted); margin-top: 14px; min-height: 18px; }
+    .sub-note.error { color: #d6455d; }
   </style>
 </head>
 <body>
@@ -283,6 +294,7 @@
   </header>
 
   <div class="card">
+    {% if current_user.subscription_status == 'active' %}
     <form id="form">
       <!-- STEP 1 : API キー -->
       <div class="step"><span class="num">STEP 1</span><span class="txt">EvoLink API キー</span></div>
@@ -364,12 +376,24 @@
     <div class="bar" id="bar"><i></i></div>
     <video id="result" controls playsinline></video>
     <a class="btn-download" id="download" download>⬇️ 完成MP4をダウンロード</a>
+    {% else %}
+    <!-- 未課金ユーザー向け：サブスク登録の案内 -->
+    <div class="subscribe-panel">
+      <div class="sub-hero">🎬</div>
+      <h2 class="sub-title">サブスク登録でダンス動画を生成</h2>
+      <p class="sub-desc">キャラ画像から、AIが自動でダンス動画を生成します。<br>まずは月額プランに登録してはじめましょう。</p>
+      <div class="sub-price"><span class="yen">¥1,980</span><span class="per">/月</span></div>
+      <button id="subscribe-btn" class="btn-primary">¥1,980/月でサブスク登録</button>
+      <p class="sub-note" id="sub-note"></p>
+    </div>
+    {% endif %}
   </div>
 
   <footer>CLIMB with MIZUI © 2026</footer>
  </div>
 
   <script>
+    {% if current_user.subscription_status == 'active' %}
     const drop = document.getElementById('drop');
     const dropText = document.getElementById('drop-text');
     const fileInput = document.getElementById('song');
@@ -511,6 +535,34 @@
         submit.textContent = '🔁 もう一度生成';
       }
     }
+    {% else %}
+    // 未課金ユーザー：サブスク登録ボタン → Checkout セッションを作ってリダイレクト
+    const subBtn = document.getElementById('subscribe-btn');
+    const subNote = document.getElementById('sub-note');
+
+    const params = new URLSearchParams(location.search);
+    if (params.get('checkout') === 'cancel') {
+      subNote.textContent = '登録がキャンセルされました。';
+    } else if (params.get('checkout') === 'success') {
+      subNote.textContent = '決済を確認しています…数秒後にページを更新してください。';
+    }
+
+    subBtn.addEventListener('click', async () => {
+      subBtn.disabled = true;
+      subNote.classList.remove('error');
+      subNote.textContent = '決済ページへ移動しています…';
+      try {
+        const res = await fetch('/create-checkout-session', { method: 'POST' });
+        const data = await res.json();
+        if (!res.ok || !data.url) throw new Error(data.error || '決済ページの作成に失敗しました');
+        location.href = data.url;
+      } catch (err) {
+        subNote.classList.add('error');
+        subNote.textContent = '⚠️ ' + err.message;
+        subBtn.disabled = false;
+      }
+    });
+    {% endif %}
   </script>
 </body>
 </html>

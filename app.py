@@ -18,6 +18,7 @@ from datetime import datetime
 from pathlib import Path
 
 import requests
+import stripe
 from flask import (
     Flask,
     jsonify,
@@ -56,6 +57,11 @@ ALLOWED_VIDEO = {"mp4", "mov", "webm"}
 MAX_CONTENT_LENGTH = 200 * 1024 * 1024  # 200MB（参照動画のMP4に対応）
 
 EVOLINK_BASE = "https://api.evolink.ai/v1"
+
+# Stripe（サブスク課金）。キーは環境変数から読み込む。
+stripe.api_key = os.environ.get("STRIPE_SECRET_KEY")
+STRIPE_WEBHOOK_SECRET = os.environ.get("STRIPE_WEBHOOK_SECRET")
+PRICE_ID = "price_1U8bZ1L0dCdWhFUqJLP5ih16"
 
 # Seedance の動画生成に使うデフォルト（config から上書き可能）
 DEFAULT_MODEL = "seedance-2.0-mini-image-to-video"
@@ -128,6 +134,8 @@ class User(UserMixin, db.Model):
     subscription_status = db.Column(
         db.String(20), nullable=False, default="free"
     )
+    # Stripe の顧客ID。Checkout 完了時に保存し、subscription.deleted で照合する。
+    stripe_customer_id = db.Column(db.String(255), unique=True, index=True)
     created_at = db.Column(db.DateTime, nullable=False, default=datetime.utcnow)
 
     def set_password(self, password: str) -> None:
@@ -340,6 +348,70 @@ def login():
 def logout():
     logout_user()
     return redirect(url_for("login"))
+
+
+# ----------------------------------------------------------------------------
+# Stripe サブスク課金
+# ----------------------------------------------------------------------------
+@app.route("/create-checkout-session", methods=["POST"])
+@login_required
+def create_checkout_session():
+    """サブスク契約用の Stripe Checkout セッションを作成し、その URL を返す。"""
+    try:
+        session = stripe.checkout.Session.create(
+            mode="subscription",
+            line_items=[{"price": PRICE_ID, "quantity": 1}],
+            success_url=url_for("index", checkout="success", _external=True),
+            cancel_url=url_for("index", checkout="cancel", _external=True),
+            # webhook 側でユーザーを特定するために現在のユーザーIDを埋め込む
+            client_reference_id=str(current_user.id),
+            customer_email=current_user.email,
+        )
+    except Exception as e:  # noqa: BLE001
+        return jsonify({"error": f"Checkout セッションの作成に失敗しました: {e}"}), 502
+
+    return jsonify({"url": session.url})
+
+
+@app.route("/stripe-webhook", methods=["POST"])
+def stripe_webhook():
+    """Stripe からの Webhook を受け取り、課金状態を DB に反映する。"""
+    payload = request.get_data()
+    sig_header = request.headers.get("Stripe-Signature", "")
+
+    try:
+        event = stripe.Webhook.construct_event(
+            payload, sig_header, STRIPE_WEBHOOK_SECRET
+        )
+    except (ValueError, stripe.error.SignatureVerificationError) as e:
+        # 不正なペイロード or 署名検証失敗
+        return jsonify({"error": str(e)}), 400
+
+    event_type = event["type"]
+    obj = event["data"]["object"]
+
+    if event_type == "checkout.session.completed":
+        # 契約完了 → ユーザーを active にし、customer_id を保存する。
+        user_id = obj.get("client_reference_id")
+        customer_id = obj.get("customer")
+        if user_id:
+            user = db.session.get(User, int(user_id))
+            if user:
+                user.subscription_status = "active"
+                if customer_id:
+                    user.stripe_customer_id = customer_id
+                db.session.commit()
+
+    elif event_type == "customer.subscription.deleted":
+        # 解約 → 顧客IDからユーザーを特定して canceled にする。
+        customer_id = obj.get("customer")
+        if customer_id:
+            user = User.query.filter_by(stripe_customer_id=customer_id).first()
+            if user:
+                user.subscription_status = "canceled"
+                db.session.commit()
+
+    return jsonify({"received": True}), 200
 
 
 @app.route("/upload", methods=["POST"])
