@@ -94,6 +94,12 @@ CONFIG = load_config()
 # 各ジョブには投入したユーザーの api_key も保持し、status/finalize でも使う。
 JOBS: dict[str, dict] = {}
 
+# ログイン試行制限（ブルートフォース対策）。メモリ上のみ（永続化しない）。
+# email -> {"count": 失敗回数, "last": 最終失敗時刻(epoch)}
+LOGIN_ATTEMPTS: dict[str, dict] = {}
+MAX_LOGIN_ATTEMPTS = 5          # この回数連続で失敗すると
+LOGIN_LOCKOUT_SECONDS = 15 * 60  # この秒数だけロックする（15分）
+
 
 # ----------------------------------------------------------------------------
 # Flask
@@ -333,12 +339,37 @@ def login():
 
     email = request.form.get("email", "").strip().lower()
     password = request.form.get("password", "")
+
+    # ブルートフォース対策：連続失敗が上限に達していたらロック中か判定する。
+    now = time.time()
+    record = LOGIN_ATTEMPTS.get(email)
+    if record and record["count"] >= MAX_LOGIN_ATTEMPTS:
+        if now - record["last"] < LOGIN_LOCKOUT_SECONDS:
+            # まだロック期間中
+            return render_template(
+                "login.html",
+                error="試行回数の上限に達しました。しばらくお待ちください",
+            ), 429
+        # ロック期間が過ぎたのでカウンタをリセットして再試行を許可する
+        LOGIN_ATTEMPTS.pop(email, None)
+
     user = User.query.filter_by(email=email).first()
     if user is None or not user.check_password(password):
+        # 失敗回数を記録（メールアドレス単位）
+        rec = LOGIN_ATTEMPTS.setdefault(email, {"count": 0, "last": 0.0})
+        rec["count"] += 1
+        rec["last"] = now
+        if rec["count"] >= MAX_LOGIN_ATTEMPTS:
+            return render_template(
+                "login.html",
+                error="試行回数の上限に達しました。しばらくお待ちください",
+            ), 429
         return render_template(
             "login.html", error="メールアドレスまたはパスワードが違います"
         ), 401
 
+    # 成功時は試行回数をリセットする
+    LOGIN_ATTEMPTS.pop(email, None)
     login_user(user)
     return redirect(url_for("index"))
 
