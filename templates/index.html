@@ -250,6 +250,26 @@
     .adv[open] > summary { color: var(--ink); }
     .adv .adv-body { padding: 2px 2px 6px; }
 
+    /* 画像の作り方ガイド（STEP 2 内の折りたたみ） */
+    .guide { margin-top: 10px; border-top: none; padding-top: 0; }
+    .guide > summary { padding: 12px 2px; font-size: 12.5px; color: var(--blue-deep); }
+    .guide-list {
+      margin: 4px 0 2px; padding-left: 18px;
+      font-size: 12px; color: var(--muted); line-height: 1.75;
+    }
+    .guide-list li { margin: 2px 0; }
+
+    /* 同意チェックボックス */
+    .consent {
+      display: flex; align-items: flex-start; gap: 10px;
+      margin: 22px 2px 0; font-size: 12px; color: var(--ink); line-height: 1.65;
+      font-weight: 500; cursor: pointer;
+    }
+    .consent input[type=checkbox] {
+      flex: none; width: 20px; height: 20px; margin: 1px 0 0;
+      accent-color: var(--blue); cursor: pointer;
+    }
+
     footer { margin-top: 22px; font-size: 11px; color: #9aa6b6; text-align: center; z-index: 1; }
   </style>
 </head>
@@ -281,6 +301,17 @@
       </div>
       <input type="file" id="image" name="image" accept="image/png,image/jpeg" required />
       <p class="hint">生成するキャラの画像です。</p>
+      <details class="adv guide">
+        <summary><span>💡 画像の作り方ガイド</span><span class="chev">▼</span></summary>
+        <div class="adv-body">
+          <ul class="guide-list">
+            <li>顔がはっきり写った正面〜やや斜めの画像を使うと安定します</li>
+            <li>背景はシンプルな方が生成結果が安定します</li>
+            <li>実在の人物写真ではなく、AI生成キャラクターやイラストを推奨します</li>
+            <li>推奨解像度：512×512px以上</li>
+          </ul>
+        </div>
+      </details>
 
       <!-- STEP 3 : 参照ダンス動画（任意） -->
       <div class="step"><span class="num">STEP 3</span><span class="txt">参照ダンス動画</span><span class="opt">任意</span></div>
@@ -318,7 +349,12 @@
         </div>
       </details>
 
-      <button type="submit" class="btn-primary" id="submit">✨ ダンス動画を生成</button>
+      <label class="consent" for="consent">
+        <input type="checkbox" id="consent" name="consent" value="1" required />
+        <span>アップロードする画像・参照動画は、自分自身のオリジナル素材、または権利者本人から明確な許可を得た素材であることを確認しました。実在の人物になりすます目的での利用はできません。</span>
+      </label>
+
+      <button type="submit" class="btn-primary" id="submit" disabled>✨ ダンス動画を生成</button>
     </form>
 
     <div class="status-row" id="status-row">
@@ -347,6 +383,12 @@
     const resultVideo = document.getElementById('result');
     const downloadBtn = document.getElementById('download');
     const apiKeyInput = document.getElementById('api_key');
+    const consentInput = document.getElementById('consent');
+
+    // 同意チェックが入るまで生成ボタンを押せないようにする
+    function syncSubmitEnabled() { submit.disabled = !consentInput.checked; }
+    consentInput.addEventListener('change', syncSubmitEnabled);
+    syncSubmitEnabled();
 
     // ---- UI ヘルパー ----
     function setStatus(text, { spin = false, error = false } = {}) {
@@ -394,6 +436,7 @@
       e.preventDefault();
       if (!apiKeyInput.value.trim()) { setStatus('STEP 1: EvoLink API キーを入力してください', { error: true }); return; }
       if (!imageInput.files.length) { setStatus('STEP 2: キャラクター画像（PNG / JPG）を選択してください', { error: true }); return; }
+      if (!consentInput.checked) { setStatus('素材の権利に関する確認事項に同意してください', { error: true }); return; }
       localStorage.setItem('evolink_api_key', apiKeyInput.value.trim());
 
       submit.disabled = true;

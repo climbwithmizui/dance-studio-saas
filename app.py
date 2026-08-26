@@ -225,6 +225,15 @@ def upload():
     if not api_key:
         return jsonify({"error": "EvoLink API キーを入力してください"}), 400
 
+    # 素材の権利に関する同意（チェックボックス）を必須とする。
+    consent = request.form.get("consent", "").strip()
+    if consent not in ("1", "on", "true"):
+        return jsonify(
+            {
+                "error": "アップロード素材の権利に関する確認事項への同意が必要です"
+            }
+        ), 400
+
     # 曲アップロードは任意。あれば保存して後工程で合成する。
     stored_name = None
     file = request.files.get("song")
