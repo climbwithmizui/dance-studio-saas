@@ -4,3 +4,5 @@ __pycache__/
 .env
 uploads/*
 !uploads/.gitkeep
+users.db
+*.db

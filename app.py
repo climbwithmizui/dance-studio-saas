@@ -14,18 +14,30 @@ import os
 import subprocess
 import time
 import uuid
+from datetime import datetime
 from pathlib import Path
 
 import requests
 from flask import (
     Flask,
     jsonify,
+    redirect,
     render_template,
     request,
     send_from_directory,
     url_for,
 )
+from flask_login import (
+    LoginManager,
+    UserMixin,
+    current_user,
+    login_required,
+    login_user,
+    logout_user,
+)
+from flask_sqlalchemy import SQLAlchemy
 from werkzeug.middleware.proxy_fix import ProxyFix
+from werkzeug.security import check_password_hash, generate_password_hash
 from werkzeug.utils import secure_filename
 
 # ----------------------------------------------------------------------------
@@ -86,6 +98,61 @@ app = Flask(__name__, static_folder="static", static_url_path="/static")
 # url_for(_external=True) が正しい https:// の外部URLを生成できるようにする。
 app.wsgi_app = ProxyFix(app.wsgi_app, x_proto=1, x_host=1)
 app.config["MAX_CONTENT_LENGTH"] = MAX_CONTENT_LENGTH
+
+# セッション署名用のシークレット（本番は環境変数で必ず上書きする）
+app.config["SECRET_KEY"] = os.environ.get("SECRET_KEY", "dev-secret-change-me")
+
+# ----------------------------------------------------------------------------
+# データベース（SQLite）& 認証
+# ----------------------------------------------------------------------------
+app.config["SQLALCHEMY_DATABASE_URI"] = "sqlite:///" + str(BASE_DIR / "users.db")
+app.config["SQLALCHEMY_TRACK_MODIFICATIONS"] = False
+db = SQLAlchemy(app)
+
+login_manager = LoginManager(app)
+login_manager.login_view = "login"
+
+
+class User(UserMixin, db.Model):
+    """アプリのユーザー。subscription_status で課金状態を管理する。
+
+    subscription_status:
+      free     … 登録直後（アップロード不可 / 402）
+      active   … 課金中（アップロード可）
+      canceled … 解約済み（アップロード不可）
+    """
+
+    id = db.Column(db.Integer, primary_key=True)
+    email = db.Column(db.String(255), unique=True, nullable=False, index=True)
+    password_hash = db.Column(db.String(255), nullable=False)
+    subscription_status = db.Column(
+        db.String(20), nullable=False, default="free"
+    )
+    created_at = db.Column(db.DateTime, nullable=False, default=datetime.utcnow)
+
+    def set_password(self, password: str) -> None:
+        self.password_hash = generate_password_hash(password)
+
+    def check_password(self, password: str) -> bool:
+        return check_password_hash(self.password_hash, password)
+
+
+@login_manager.user_loader
+def load_user(user_id: str):
+    return db.session.get(User, int(user_id))
+
+
+@login_manager.unauthorized_handler
+def unauthorized():
+    """未ログイン時の挙動。API 用の /upload は 401 JSON、それ以外は
+    ログインページにリダイレクトする。"""
+    if request.endpoint == "upload":
+        return jsonify({"error": "ログインが必要です"}), 401
+    return redirect(url_for("login"))
+
+
+with app.app_context():
+    db.create_all()
 
 
 def allowed_file(filename: str) -> bool:
@@ -215,12 +282,76 @@ def mux_audio_video(video_path: Path, audio_path: Path, out_path: Path) -> Path:
 # ルート
 # ----------------------------------------------------------------------------
 @app.route("/")
+@login_required
 def index():
     return render_template("index.html")
 
 
+# ----------------------------------------------------------------------------
+# 認証ルート
+# ----------------------------------------------------------------------------
+@app.route("/signup", methods=["GET", "POST"])
+def signup():
+    if current_user.is_authenticated:
+        return redirect(url_for("index"))
+    if request.method == "GET":
+        return render_template("signup.html")
+
+    email = request.form.get("email", "").strip().lower()
+    password = request.form.get("password", "")
+    if not email or not password:
+        return render_template(
+            "signup.html", error="メールアドレスとパスワードを入力してください"
+        ), 400
+    if User.query.filter_by(email=email).first():
+        return render_template(
+            "signup.html", error="このメールアドレスは既に登録されています"
+        ), 400
+
+    user = User(email=email, subscription_status="free")
+    user.set_password(password)
+    db.session.add(user)
+    db.session.commit()
+    login_user(user)
+    return redirect(url_for("index"))
+
+
+@app.route("/login", methods=["GET", "POST"])
+def login():
+    if current_user.is_authenticated:
+        return redirect(url_for("index"))
+    if request.method == "GET":
+        return render_template("login.html")
+
+    email = request.form.get("email", "").strip().lower()
+    password = request.form.get("password", "")
+    user = User.query.filter_by(email=email).first()
+    if user is None or not user.check_password(password):
+        return render_template(
+            "login.html", error="メールアドレスまたはパスワードが違います"
+        ), 401
+
+    login_user(user)
+    return redirect(url_for("index"))
+
+
+@app.route("/logout")
+@login_required
+def logout():
+    logout_user()
+    return redirect(url_for("login"))
+
+
 @app.route("/upload", methods=["POST"])
+@login_required
 def upload():
+    # サブスクリプションが有効でない場合は課金が必要（Stripe 連携は後日）。
+    # テスト時は users.db の subscription_status を手動で "active" に変更する。
+    if current_user.subscription_status != "active":
+        return jsonify(
+            {"error": "有効なサブスクリプションが必要です（Payment Required）"}
+        ), 402
+
     api_key = request.form.get("api_key", "").strip()
     if not api_key:
         return jsonify({"error": "EvoLink API キーを入力してください"}), 400
