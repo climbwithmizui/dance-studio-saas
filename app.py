@@ -392,8 +392,8 @@ def stripe_webhook():
 
     if event_type == "checkout.session.completed":
         # 契約完了 → ユーザーを active にし、customer_id を保存する。
-        user_id = obj.get("client_reference_id")
-        customer_id = obj.get("customer")
+        user_id = getattr(obj, "client_reference_id", None)
+        customer_id = getattr(obj, "customer", None)
         if user_id:
             user = db.session.get(User, int(user_id))
             if user:
@@ -404,7 +404,7 @@ def stripe_webhook():
 
     elif event_type == "customer.subscription.deleted":
         # 解約 → 顧客IDからユーザーを特定して canceled にする。
-        customer_id = obj.get("customer")
+        customer_id = getattr(obj, "customer", None)
         if customer_id:
             user = User.query.filter_by(stripe_customer_id=customer_id).first()
             if user:
