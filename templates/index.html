@@ -332,7 +332,7 @@
         <span id="drop-ref-text">参照ダンス動画を選択<br><small>MP4</small></span>
       </div>
       <input type="file" id="reference" name="reference" accept="video/mp4" />
-      <p class="hint">モーションを参考にしたい動画（10秒以内のMP4）を入れると、その振り付けを参照して生成します。<br>
+      <p class="hint">モーションを参考にしたい動画（15秒以内のMP4）を入れると、その振り付けを参照して生成します。<br>
         ・参照動画あり → 720p 自動設定・クレジット約150消費<br>
         ・参照動画なし → 480p・クレジット約10消費</p>
       <details class="adv guide">
@@ -375,6 +375,8 @@
         <input type="checkbox" id="consent" name="consent" value="1" required />
         <span>アップロードする画像・参照動画は、自分自身のオリジナル素材、または権利者本人から明確な許可を得た素材であることを確認しました。実在の人物になりすます目的での利用はできません。</span>
       </label>
+
+      <p class="hint">生成される動画には音声が含まれません。曲を入れたい場合はSTEP 4で曲をアップロードしてください。</p>
 
       <button type="submit" class="btn-primary" id="submit" disabled>✨ ダンス動画を生成</button>
     </form>

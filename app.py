@@ -294,7 +294,7 @@ def friendly_evolink_error(
         if "video" in low or "format" in low or "duration" in low:
             return (
                 "参照動画の形式または長さに問題がある可能性があります。"
-                "10秒以内のMP4（H.264など一般的な形式）でお試しください。"
+                "15秒以内のMP4（H.264など一般的な形式）でお試しください。"
             )
         if "image" in low:
             return (
