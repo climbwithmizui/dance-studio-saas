@@ -260,6 +260,62 @@ def create_seedance_job(
     return resp.json()
 
 
+def friendly_evolink_error(
+    err: Exception, status_code: int | None = None, body: str = ""
+) -> str:
+    """EvoLink / 通信まわりのエラーを、意味が伝わる日本語メッセージに言い換える。
+
+    専門的すぎる原文はそのまま出さず、ユーザーが次に取るべき行動が分かる表現にする。
+    （※クレジット不足 402 は呼び出し側で個別に処理するため、ここでは扱わない）
+    """
+    low = (body or "").lower()
+
+    # HTTP 応答が無いケース（タイムアウト / 接続エラー）
+    if isinstance(err, requests.Timeout):
+        return "EvoLinkからの応答がタイムアウトしました。時間をおいて再度お試しください。"
+    if isinstance(err, requests.ConnectionError):
+        return (
+            "EvoLinkに接続できませんでした。ネットワーク状況を確認のうえ、"
+            "時間をおいて再度お試しください。"
+        )
+
+    # HTTP ステータス別の言い換え
+    if status_code == 401 or "invalid api key" in low or "unauthorized" in low:
+        return (
+            "EvoLink APIキーが正しくないか、無効になっています。"
+            "キーを確認して、もう一度入力してください。"
+        )
+    if status_code == 429 or "rate limit" in low:
+        return (
+            "EvoLink側のリクエスト制限に達しました。"
+            "少し時間をおいてから再度お試しください。"
+        )
+    if status_code == 400:
+        if "video" in low or "format" in low or "duration" in low:
+            return (
+                "参照動画の形式または長さに問題がある可能性があります。"
+                "10秒以内のMP4（H.264など一般的な形式）でお試しください。"
+            )
+        if "image" in low:
+            return (
+                "キャラクター画像の形式に問題がある可能性があります。"
+                "PNGまたはJPGでお試しください。"
+            )
+        return (
+            "リクエスト内容に問題があり、生成できませんでした。"
+            "アップロードした画像・参照動画を見直して再度お試しください。"
+        )
+    if status_code is not None and status_code >= 500:
+        return (
+            "EvoLink側で一時的なエラーが発生しました。"
+            "時間をおいて再度お試しください。"
+        )
+
+    # 判別できない場合は、原文の要点を添えて返す（内容は隠さない方針）。
+    detail = (body[:200] if body else str(err)) or "不明なエラー"
+    return f"生成に失敗しました。時間をおいて再度お試しください。（詳細: {detail}）"
+
+
 def get_seedance_task(task_id: str, api_key: str) -> dict:
     """Seedance のタスク状態を取得する。"""
     headers = {"Authorization": f"Bearer {api_key}"}
@@ -522,55 +578,41 @@ def upload():
         result = create_seedance_job(
             prompt, model, api_key, mode, image_url, ref_url, resolution
         )
-    except Exception as first_err:  # noqa: BLE001
-        # まず reference-to-video が失敗した理由をログに残す。フォールバックが
-        # 成功するとこの元エラーは握り潰されてしまうため、原因特定にはここが必須。
-        if isinstance(first_err, requests.HTTPError) and first_err.response is not None:
+    except Exception as err:  # noqa: BLE001
+        # 失敗理由をサーバーログに残す（原因特定用）。
+        status_code = None
+        body = ""
+        if isinstance(err, requests.HTTPError) and err.response is not None:
+            status_code = err.response.status_code
+            body = err.response.text or ""
             print(
-                f"[reference-to-video failed] status={first_err.response.status_code} "
-                f"body={first_err.response.text[:1000]}",
+                f"[generation failed] mode={mode} status={status_code} "
+                f"body={body[:1000]}",
                 flush=True,
             )
         else:
             print(
-                f"[reference-to-video failed] {type(first_err).__name__}: {first_err}",
+                f"[generation failed] mode={mode} {type(err).__name__}: {err}",
                 flush=True,
             )
-        # reference-to-video で失敗した場合は、参照動画を外して
-        # image-to-video にフォールバックして再試行する。
-        can_fallback = ref_url and (
-            image_url or CONFIG.get("seedance_image_url")
-        )
-        if can_fallback:
-            # reference-to-video → image-to-video に切り替えるので、
-            # プロンプト・解像度も image-to-video 用に戻す。
-            mode = "image-to-video"
-            model = "seedance-2.0-mini-image-to-video"
-            prompt = user_prompt or DEFAULT_PROMPT
-            resolution = user_resolution
-            ref_url = None
-            try:
-                result = create_seedance_job(
-                    prompt, model, api_key, mode, image_url, ref_url, resolution
-                )
-            except requests.HTTPError as e:
-                body = e.response.text if e.response is not None else str(e)
-                return jsonify(
-                    {"error": f"Seedance へのリクエストに失敗しました: {body}"}
-                ), 502
-            except Exception as e:  # noqa: BLE001
-                return jsonify({"error": str(e)}), 500
-        elif isinstance(first_err, requests.HTTPError):
-            body = (
-                first_err.response.text
-                if first_err.response is not None
-                else str(first_err)
-            )
+
+        # クレジット不足（402 / insufficient_quota）は、方針上フォールバックしない。
+        # ユーザーは自分の EvoLink キー・クレジットを使う設計のため、理由を伝えず
+        # 別モデル（mini-image-to-video）で低品質な別物を生成するのは誠実でない。
+        # クレジット追加を促す明確なメッセージを返す。
+        if status_code == 402 or "insufficient_quota" in body.lower():
             return jsonify(
-                {"error": f"Seedance へのリクエストに失敗しました: {body}"}
-            ), 502
-        else:
-            return jsonify({"error": str(first_err)}), 500
+                {
+                    "error": (
+                        "EvoLinkのクレジットが不足しています。EvoLinkのアカウント"
+                        "ページからクレジットを追加してから、再度お試しください。"
+                        "（reference-to-video生成には約150クレジットが必要です）"
+                    )
+                }
+            ), 402
+
+        # 402 以外の失敗も、フォールバックせず、内容を隠さず日本語で分かりやすく伝える。
+        return jsonify({"error": friendly_evolink_error(err, status_code, body)}), 502
 
     task_id = result.get("id") or result.get("task_id")
     JOBS[task_id] = {
