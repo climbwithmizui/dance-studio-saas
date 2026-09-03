@@ -816,7 +816,15 @@ def status(task_id):
         )
 
     results = data.get("results") or []
+    safe_error = None
+    error_code = None
     if data.get("status") == "failed":
+        print(
+            f"[EvoLink task failed] task={task_id} error={data.get('error')}",
+            flush=True,
+        )
+        safe_error = "EvoLinkで生成処理に失敗しました。時間をおいて再度お試しください。"
+        error_code = "DS-EVOLINK-003"
         cleanup_job_inputs(job)
     return jsonify(
         {
@@ -824,7 +832,8 @@ def status(task_id):
             "status": data.get("status"),
             "progress": data.get("progress"),
             "video_url": results[0] if results else None,
-            "error": data.get("error"),
+            "error": safe_error,
+            "error_code": error_code,
         }
     )
 
