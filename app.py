@@ -444,7 +444,7 @@ def mux_audio_video(video_path: Path, audio_path: Path, out_path: Path) -> Path:
 @login_required
 def index():
     public_links = {
-        "guide": os.environ.get("GUIDE_URL", ""),
+        "guide": os.environ.get("GUIDE_URL") or url_for("guide"),
         "terms": os.environ.get("TERMS_URL", ""),
         "privacy": os.environ.get("PRIVACY_URL", ""),
         "cancel": os.environ.get("CANCELLATION_POLICY_URL", ""),
@@ -457,6 +457,21 @@ def index():
 def tokushoho():
     """特定商取引法に基づく表記（誰でも閲覧できるよう認証不要）。"""
     return render_template("tokushoho.html")
+
+
+@app.route("/guide")
+def guide():
+    """Dance Studioの使い方ガイド。購入前でも確認できるよう認証不要。"""
+    return render_template(
+        "guide.html",
+        support_url=os.environ.get("SUPPORT_URL", ""),
+    )
+
+
+@app.route("/guide/evolink-api-key")
+def evolink_api_key_guide():
+    """EvoLink APIキー取得ガイド。購入前でも確認できるよう認証不要。"""
+    return render_template("evolink_api_key_guide.html")
 
 
 # ----------------------------------------------------------------------------
@@ -830,8 +845,6 @@ def status(task_id):
             f"[EvoLink task failed] task={task_id} error={raw_error}",
             flush=True,
         )
-        # 方針: 生成失敗の理由は隠さず、EvoLink が返した内容を添えて利用者に伝える。
-        # （運営側の内部事情を隠す必要はないため。原文はサーバーログにも残す）
         detail = str(raw_error).strip() if raw_error else "詳細不明"
         task_error = f"EvoLinkからの失敗理由: {detail}"
         error_code = "DS-EVOLINK-003"
