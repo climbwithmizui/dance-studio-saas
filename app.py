@@ -845,6 +845,8 @@ def status(task_id):
             f"[EvoLink task failed] task={task_id} error={raw_error}",
             flush=True,
         )
+        # 方針: 生成失敗の理由は隠さず、EvoLink が返した内容を添えて利用者に伝える。
+        # （運営側の内部事情を隠す必要はないため。原文はサーバーログにも残す）
         detail = str(raw_error).strip() if raw_error else "詳細不明"
         task_error = f"EvoLinkからの失敗理由: {detail}"
         error_code = "DS-EVOLINK-003"
