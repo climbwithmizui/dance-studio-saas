@@ -120,6 +120,11 @@
       font-size: 15px; opacity: .5; pointer-events: none;
     }
     #api_key { padding-left: 40px; letter-spacing: .06em; }
+    .key-tools { display: flex; justify-content: flex-end; margin-top: 7px; }
+    .btn-text {
+      border: 0; background: transparent; color: var(--blue-deep); cursor: pointer;
+      font: 700 11px/1.4 inherit; padding: 3px 2px;
+    }
 
     .hint { font-size: 11px; color: var(--muted); margin: 8px 3px 0; line-height: 1.6; }
     .hint a { color: var(--blue-deep); font-weight: 700; text-decoration: none; }
@@ -140,6 +145,8 @@
       background: linear-gradient(180deg, #ffffff, #eaf3ff);
       font-weight: 700;
     }
+    .drop.disabled { opacity: .5; cursor: not-allowed; filter: grayscale(.2); }
+    .field:disabled { opacity: .6; cursor: not-allowed; }
 
     /* メインのアップロード/生成ボタン：薄いブルーのグラデ、大きくタップしやすい */
     .btn-primary {
@@ -166,6 +173,9 @@
     }
     .status-row.show { display: flex; }
     .status-row.error { color: #d6455d; }
+    .error-actions { display: none; text-align: center; margin-top: 8px; }
+    .error-actions.show { display: block; }
+    .error-code { font: 700 11px/1.4 ui-monospace, SFMono-Regular, Menlo, monospace; color: #a33b50; }
     .spinner {
       width: 20px; height: 20px; border-radius: 50%;
       border: 2.5px solid rgba(91,157,249,.25); border-top-color: var(--blue);
@@ -259,6 +269,33 @@
     }
     .guide-list li { margin: 2px 0; }
 
+    .quick-start, .mode-card, .price-note {
+      border: 1px solid rgba(91,157,249,.25); border-radius: 14px;
+      background: rgba(255,255,255,.58); padding: 13px 14px;
+      font-size: 12px; line-height: 1.7;
+    }
+    .quick-start { margin: 0 0 18px; }
+    .quick-start summary { cursor: pointer; color: var(--blue-deep); font-weight: 900; }
+    .quick-start ol { margin: 9px 0 0; padding-left: 22px; color: var(--muted); }
+    .mode-card { margin-top: 18px; }
+    .mode-card strong { color: var(--blue-deep); }
+    .mode-card p { margin: 2px 0; }
+    .price-note { margin-top: 16px; color: var(--muted); }
+
+    dialog {
+      width: min(390px, calc(100% - 28px)); border: 0; border-radius: 20px;
+      padding: 0; color: var(--ink); box-shadow: 0 24px 70px rgba(42,52,65,.3);
+    }
+    dialog::backdrop { background: rgba(31,43,59,.48); backdrop-filter: blur(3px); }
+    .confirm-body { padding: 23px 22px 20px; }
+    .confirm-body h2 { margin: 0 0 14px; font-size: 18px; }
+    .confirm-list { margin: 0; padding: 0; list-style: none; font-size: 13px; line-height: 1.8; }
+    .confirm-list li { border-bottom: 1px solid var(--line); padding: 6px 0; word-break: break-word; }
+    .confirm-warning { margin: 13px 0 0; padding: 10px 11px; border-radius: 10px; background: #fff6dd; color: #6c5521; font-size: 12px; line-height: 1.6; }
+    .confirm-actions { display: grid; grid-template-columns: 1fr 1.3fr; gap: 10px; margin-top: 18px; }
+    .btn-secondary { border: 1px solid var(--line); border-radius: 12px; background: #fff; color: var(--ink); font: 700 14px inherit; cursor: pointer; }
+    .confirm-actions .btn-primary { margin: 0; padding: 14px 10px; font-size: 14px; }
+
     /* 同意チェックボックス */
     .consent {
       display: flex; align-items: flex-start; gap: 10px;
@@ -271,6 +308,8 @@
     }
 
     footer { margin-top: 22px; font-size: 11px; color: #9aa6b6; text-align: center; z-index: 1; }
+    .footer-links { display: flex; flex-wrap: wrap; justify-content: center; gap: 8px 12px; margin-bottom: 8px; }
+    .footer-links a { color: #71829a; text-decoration: none; }
 
     /* サブスク登録パネル（未課金ユーザー向け） */
     .subscribe-panel { text-align: center; padding: 6px 4px 4px; }
@@ -296,12 +335,23 @@
   <div class="card">
     {% if current_user.subscription_status == 'active' %}
     <form id="form">
+      <details class="quick-start">
+        <summary>🚀 初回用・最短3分ガイド</summary>
+        <ol>
+          <li>EvoLink APIキーを入力</li>
+          <li>キャラクター画像を選択</li>
+          <li>参照ダンスなら15秒以内のMP4、オリジナルダンスなら曲を選択</li>
+          <li>権利確認に同意して生成</li>
+        </ol>
+      </details>
+
       <!-- STEP 1 : API キー -->
       <div class="step"><span class="num">STEP 1</span><span class="txt">EvoLink API キー</span></div>
       <div class="key-wrap">
         <span class="key-ico">🔑</span>
         <input class="field" type="password" name="api_key" id="api_key" placeholder="sk-..." autocomplete="off" required />
       </div>
+      <div class="key-tools"><button type="button" class="btn-text" id="clear-api-key">この端末からAPIキーを削除</button></div>
       <a class="signup" href="https://evolink.ai" target="_blank" rel="noopener">EvoLinkアカウントを持っていない方はこちらで無料登録 <span class="arrow">→</span></a>
       <p class="hint">キーはこの端末にのみ保存され、生成時にのみ使用されます。</p>
 
@@ -312,7 +362,7 @@
         <span id="drop-image-text">キャラクター画像を選択<br><small>PNG / JPG</small></span>
       </div>
       <input type="file" id="image" name="image" accept="image/png,image/jpeg" required />
-      <p class="hint">生成するキャラの画像です。</p>
+      <p class="hint">生成するキャラの画像です（PNG/JPG・最大20MB）。全身が見える鮮明な画像がおすすめです。</p>
       <details class="adv guide">
         <summary><span>💡 画像の作り方ガイド</span><span class="chev">▼</span></summary>
         <div class="adv-body">
@@ -332,7 +382,8 @@
         <span id="drop-ref-text">参照ダンス動画を選択<br><small>MP4</small></span>
       </div>
       <input type="file" id="reference" name="reference" accept="video/mp4" />
-      <p class="hint">モーションを参考にしたい動画（15秒以内のMP4）を入れると、その振り付けを参照して生成します。<br>
+      <div class="key-tools"><button type="button" class="btn-text" id="clear-reference">参照動画を選択解除</button></div>
+      <p class="hint">基本は10秒以内、最大15秒・200MBまでのMP4。10秒を超える素材は1080pをおすすめします。<br>
         ・参照動画あり → 720p 自動設定・クレジット約150消費<br>
         ・参照動画なし → 480p・クレジット約10消費</p>
       <details class="adv guide">
@@ -352,8 +403,8 @@
         <span class="drop-ico">🎵</span>
         <span id="drop-text">タップして曲を選択<br><small>mp3 / wav / m4a / aac ...</small></span>
       </div>
-      <input type="file" id="song" name="song" accept="audio/*" />
-      <p class="hint">アップすると音源入り動画に仕上がります。</p>
+      <input type="file" id="song" name="song" accept=".mp3,.wav,.m4a,.aac,audio/mpeg,audio/wav,audio/mp4,audio/aac" />
+      <p class="hint" id="song-hint">参照動画なしの場合、アップした曲を完成動画へ合成します（最大100MB）。</p>
 
       <!-- 詳細設定（初心者はここを開かなくてOK） -->
       <details class="adv">
@@ -363,7 +414,7 @@
           <textarea class="field" name="prompt" placeholder="例: 明るいスタジオでキレのあるヒップホップ、フルボディ"></textarea>
 
           <label>解像度</label>
-          <select class="field" name="resolution">
+          <select class="field" name="resolution" id="resolution">
             <option value="480p" selected>480p（軽量・最速）</option>
             <option value="720p">720p（標準・生成が速い）</option>
             <option value="1080p">1080p（高画質・時間がかかる）</option>
@@ -371,12 +422,17 @@
         </div>
       </details>
 
+      <div class="mode-card" id="mode-card" aria-live="polite">
+        <p><strong id="mode-name">オリジナルダンス生成</strong></p>
+        <p id="mode-details">480p・約10クレジット（目安）・曲を選択した場合は音源付き</p>
+      </div>
+
       <label class="consent" for="consent">
         <input type="checkbox" id="consent" name="consent" value="1" required />
         <span>アップロードする画像・参照動画は、自分自身のオリジナル素材、または権利者本人から明確な許可を得た素材であることを確認しました。実在の人物になりすます目的での利用はできません。</span>
       </label>
 
-      <p class="hint">生成される動画には音声が含まれません。曲を入れたい場合はSTEP 4で曲をアップロードしてください。</p>
+      <p class="hint">参照動画ありの完成動画は著作権への配慮から無音です。完成後に各SNSの利用条件に従って音源を付けてください。</p>
 
       <button type="submit" class="btn-primary" id="submit" disabled>✨ ダンス動画を生成</button>
     </form>
@@ -384,6 +440,10 @@
     <div class="status-row" id="status-row">
       <span class="spinner" id="spinner"></span>
       <span id="status"></span>
+    </div>
+    <div class="error-actions" id="error-actions">
+      <span class="error-code" id="error-code"></span>
+      <button type="button" class="btn-text" id="copy-error">問い合わせ情報をコピー</button>
     </div>
     <div class="bar" id="bar"><i></i></div>
     <video id="result" controls playsinline></video>
@@ -396,13 +456,44 @@
       <p class="sub-desc">キャラ画像から、AIが自動でダンス動画を生成します。<br>まずは月額プランに登録してはじめましょう。</p>
       <div class="sub-price"><span class="yen">¥1,980</span><span class="per">/月</span></div>
       <button id="subscribe-btn" class="btn-primary">¥1,980/月でサブスク登録</button>
+      <div class="price-note">Dance Studioの月額料金にEvoLinkの動画生成クレジットは含まれません。生成にはご自身のEvoLinkアカウントとクレジットが必要です。</div>
       <p class="sub-note" id="sub-note"></p>
     </div>
     {% endif %}
   </div>
 
-  <footer>CLIMB with MIZUI © 2026</footer>
+  <footer>
+    <div class="footer-links">
+      {% if public_links.guide %}<a href="{{ public_links.guide }}" target="_blank" rel="noopener">使い方ガイド</a>{% endif %}
+      {% if public_links.terms %}<a href="{{ public_links.terms }}" target="_blank" rel="noopener">利用規約</a>{% endif %}
+      {% if public_links.privacy %}<a href="{{ public_links.privacy }}" target="_blank" rel="noopener">プライバシー</a>{% endif %}
+      {% if public_links.cancel %}<a href="{{ public_links.cancel }}" target="_blank" rel="noopener">解約・返金</a>{% endif %}
+      {% if public_links.support %}<a href="{{ public_links.support }}" target="_blank" rel="noopener">サポート</a>{% endif %}
+    </div>
+    CLIMB with MIZUI © 2026
+  </footer>
  </div>
+
+  {% if current_user.subscription_status == 'active' %}
+  <dialog id="confirm-dialog" aria-labelledby="confirm-title">
+    <div class="confirm-body">
+      <h2 id="confirm-title">生成内容の最終確認</h2>
+      <ul class="confirm-list">
+        <li><b>画像：</b><span id="confirm-image"></span></li>
+        <li><b>参照動画：</b><span id="confirm-reference"></span></li>
+        <li><b>曲：</b><span id="confirm-song"></span></li>
+        <li><b>モード：</b><span id="confirm-mode"></span></li>
+        <li><b>解像度：</b><span id="confirm-resolution"></span></li>
+        <li><b>消費目安：</b><span id="confirm-credit"></span></li>
+      </ul>
+      <p class="confirm-warning" id="confirm-warning"></p>
+      <div class="confirm-actions">
+        <button type="button" class="btn-secondary" id="confirm-cancel">戻って確認</button>
+        <button type="button" class="btn-primary" id="confirm-generate">この内容で生成</button>
+      </div>
+    </div>
+  </dialog>
+  {% endif %}
 
   <script>
     {% if current_user.subscription_status == 'active' %}
@@ -420,18 +511,31 @@
     const downloadBtn = document.getElementById('download');
     const apiKeyInput = document.getElementById('api_key');
     const consentInput = document.getElementById('consent');
+    const resolutionInput = document.getElementById('resolution');
+    const modeName = document.getElementById('mode-name');
+    const modeDetails = document.getElementById('mode-details');
+    const songHint = document.getElementById('song-hint');
+    const confirmDialog = document.getElementById('confirm-dialog');
+    const errorActions = document.getElementById('error-actions');
+    const errorCodeEl = document.getElementById('error-code');
+    const copyErrorBtn = document.getElementById('copy-error');
+    let lastErrorMessage = '';
+    let isGenerating = false;
 
     // 同意チェックが入るまで生成ボタンを押せないようにする
-    function syncSubmitEnabled() { submit.disabled = !consentInput.checked; }
+    function syncSubmitEnabled() { submit.disabled = !consentInput.checked || isGenerating; }
     consentInput.addEventListener('change', syncSubmitEnabled);
     syncSubmitEnabled();
 
     // ---- UI ヘルパー ----
-    function setStatus(text, { spin = false, error = false } = {}) {
+    function setStatus(text, { spin = false, error = false, errorCode = '' } = {}) {
       statusEl.textContent = text;
       statusRow.classList.toggle('show', !!text);
       statusRow.classList.toggle('error', error);
       spinner.classList.toggle('show', spin);
+      errorCodeEl.textContent = errorCode ? 'エラーコード: ' + errorCode : '';
+      errorActions.classList.toggle('show', !!errorCode);
+      lastErrorMessage = error ? text : '';
     }
     function showBar(v) { bar.classList.toggle('show', v); }
     function setProgress(pct) { barFill.style.width = pct + '%'; }
@@ -441,13 +545,29 @@
     apiKeyInput.addEventListener('change', () => {
       localStorage.setItem('evolink_api_key', apiKeyInput.value.trim());
     });
+    document.getElementById('clear-api-key').addEventListener('click', () => {
+      localStorage.removeItem('evolink_api_key');
+      apiKeyInput.value = '';
+      setStatus('この端末からEvoLink APIキーを削除しました');
+    });
+    copyErrorBtn.addEventListener('click', async () => {
+      const safeText = ['Dance Studio', errorCodeEl.textContent, lastErrorMessage, new Date().toISOString()].filter(Boolean).join('\n');
+      try {
+        await navigator.clipboard.writeText(safeText);
+        copyErrorBtn.textContent = 'コピーしました';
+        setTimeout(() => { copyErrorBtn.textContent = '問い合わせ情報をコピー'; }, 1800);
+      } catch (_) {
+        copyErrorBtn.textContent = 'コピーできませんでした';
+      }
+    });
 
-    drop.addEventListener('click', () => fileInput.click());
+    drop.addEventListener('click', () => { if (!fileInput.disabled) fileInput.click(); });
     fileInput.addEventListener('change', () => {
       if (fileInput.files.length) {
         dropText.innerHTML = '🎵 ' + fileInput.files[0].name;
         drop.classList.add('has-file');
       }
+      updateModeSummary();
     });
 
     // 素材アップロード（画像 / 参照動画）。参照動画があれば自動で reference-to-video。
@@ -466,16 +586,120 @@
     bindDrop(document.getElementById('drop-image'), imageInput, document.getElementById('drop-image-text'), '🖼️');
     bindDrop(document.getElementById('drop-ref'), refInput, document.getElementById('drop-ref-text'), '🎬');
 
+    let lastOriginalResolution = resolutionInput.value;
+    resolutionInput.addEventListener('change', () => {
+      if (!refInput.files.length) lastOriginalResolution = resolutionInput.value;
+      updateModeSummary();
+    });
+
+    function updateModeSummary() {
+      const hasReference = refInput.files.length > 0;
+      if (hasReference) {
+        modeName.textContent = '参照ダンス生成';
+        modeDetails.textContent = '720p固定・約150クレジット・完成動画は無音';
+        resolutionInput.value = '720p';
+        resolutionInput.disabled = true;
+        fileInput.value = '';
+        fileInput.disabled = true;
+        drop.classList.add('disabled');
+        drop.classList.remove('has-file');
+        dropText.innerHTML = '参照ダンス生成では曲を使用しません';
+        songHint.textContent = '参照動画ありの完成動画は著作権への配慮から無音になります。';
+      } else {
+        modeName.textContent = 'オリジナルダンス生成';
+        resolutionInput.disabled = false;
+        resolutionInput.value = lastOriginalResolution;
+        fileInput.disabled = false;
+        drop.classList.remove('disabled');
+        if (!fileInput.files.length) dropText.innerHTML = 'タップして曲を選択<br><small>mp3 / wav / m4a / aac</small>';
+        modeDetails.textContent = resolutionInput.value + '・約10クレジット〜（解像度により変動）・曲を選択した場合は音源付き';
+        songHint.textContent = '参照動画なしの場合、アップした曲を完成動画へ合成します（最大100MB）。';
+      }
+    }
+
+    async function validateReferenceDuration() {
+      if (!refInput.files.length) return true;
+      const file = refInput.files[0];
+      return new Promise((resolve) => {
+        const video = document.createElement('video');
+        const objectUrl = URL.createObjectURL(file);
+        const finish = (ok) => { URL.revokeObjectURL(objectUrl); resolve(ok); };
+        video.preload = 'metadata';
+        video.onloadedmetadata = () => {
+          if (video.duration > 15.05) {
+            refInput.value = '';
+            document.getElementById('drop-ref').classList.remove('has-file');
+            document.getElementById('drop-ref-text').innerHTML = '参照ダンス動画を選択<br><small>MP4</small>';
+            updateModeSummary();
+            setStatus('参照動画は最大15秒です（選択された動画: ' + video.duration.toFixed(1) + '秒）', { error: true, errorCode: 'DS-VIDEO-004' });
+            finish(false);
+          } else {
+            finish(true);
+          }
+        };
+        video.onerror = () => finish(true); // 最終判定はサーバーのffprobeで行う
+        video.src = objectUrl;
+      });
+    }
+
+    refInput.addEventListener('change', async () => {
+      if (await validateReferenceDuration()) updateModeSummary();
+    });
+    document.getElementById('clear-reference').addEventListener('click', () => {
+      refInput.value = '';
+      document.getElementById('drop-ref').classList.remove('has-file');
+      document.getElementById('drop-ref-text').innerHTML = '参照ダンス動画を選択<br><small>MP4</small>';
+      updateModeSummary();
+    });
+    updateModeSummary();
+
     let pollTimer = null;
+
+    function displayApiError(message, code, prefix = '⚠️ ') {
+      setStatus(prefix + message, { error: true, errorCode: code || 'DS-UNKNOWN-001' });
+    }
+
+    function selectedName(input, fallback = 'なし') {
+      return input.files.length ? input.files[0].name : fallback;
+    }
+
+    function openConfirmation() {
+      const hasReference = refInput.files.length > 0;
+      document.getElementById('confirm-image').textContent = selectedName(imageInput);
+      document.getElementById('confirm-reference').textContent = selectedName(refInput);
+      document.getElementById('confirm-song').textContent = hasReference ? '使用しません（無音）' : selectedName(fileInput);
+      document.getElementById('confirm-mode').textContent = hasReference ? '参照ダンス生成' : 'オリジナルダンス生成';
+      document.getElementById('confirm-resolution').textContent = hasReference ? '720p（自動設定）' : resolutionInput.value;
+      document.getElementById('confirm-credit').textContent = hasReference ? '約150クレジット' : '約10クレジット〜（解像度により変動）';
+      document.getElementById('confirm-warning').textContent = hasReference
+        ? '参照動画ありの完成動画は著作権への配慮から無音です。生成開始後はEvoLinkクレジットを消費する場合があります。'
+        : '曲を選択した場合は完成動画へ合成します。生成開始後はEvoLinkクレジットを消費する場合があります。';
+      confirmDialog.showModal();
+    }
 
     form.addEventListener('submit', async (e) => {
       e.preventDefault();
-      if (!apiKeyInput.value.trim()) { setStatus('STEP 1: EvoLink API キーを入力してください', { error: true }); return; }
-      if (!imageInput.files.length) { setStatus('STEP 2: キャラクター画像（PNG / JPG）を選択してください', { error: true }); return; }
-      if (!consentInput.checked) { setStatus('素材の権利に関する確認事項に同意してください', { error: true }); return; }
+      if (isGenerating) return;
+      if (!apiKeyInput.value.trim()) { displayApiError('STEP 1: EvoLink APIキーを入力してください', 'DS-KEY-003'); return; }
+      if (!imageInput.files.length) { displayApiError('STEP 2: キャラクター画像（PNG / JPG）を選択してください', 'DS-IMAGE-001'); return; }
+      if (imageInput.files[0].size > 20 * 1024 * 1024) { displayApiError('キャラクター画像は最大20MBです', 'DS-IMAGE-002'); return; }
+      if (refInput.files.length && refInput.files[0].size > 200 * 1024 * 1024) { displayApiError('参照動画は最大200MBです', 'DS-VIDEO-002'); return; }
+      if (fileInput.files.length && fileInput.files[0].size > 100 * 1024 * 1024) { displayApiError('曲は最大100MBです', 'DS-AUDIO-001'); return; }
+      if (!consentInput.checked) { displayApiError('素材の権利に関する確認事項に同意してください', 'DS-CONSENT-001'); return; }
+      if (!(await validateReferenceDuration())) return;
+      openConfirmation();
+    });
+
+    document.getElementById('confirm-cancel').addEventListener('click', () => confirmDialog.close());
+    document.getElementById('confirm-generate').addEventListener('click', startGeneration);
+
+    async function startGeneration() {
+      if (isGenerating) return;
+      confirmDialog.close();
       localStorage.setItem('evolink_api_key', apiKeyInput.value.trim());
 
-      submit.disabled = true;
+      isGenerating = true;
+      syncSubmitEnabled();
       submit.textContent = '送信中…';
       resultVideo.classList.remove('show');
       downloadBtn.classList.remove('show');
@@ -486,18 +710,23 @@
       try {
         const res = await fetch('/upload', { method: 'POST', body: new FormData(form) });
         const data = await res.json();
-        if (!res.ok) throw new Error(data.error || '送信に失敗しました');
+        if (!res.ok) {
+          const err = new Error(data.error || '送信に失敗しました');
+          err.code = data.error_code;
+          throw err;
+        }
 
         submit.textContent = '生成中…';
         setStatus('AI がダンスを生成しています…', { spin: true });
         poll(data.task_id);
       } catch (err) {
-        setStatus('⚠️ ' + err.message, { error: true });
+        displayApiError(err.message, err.code);
         showBar(false);
-        submit.disabled = false;
+        isGenerating = false;
+        syncSubmitEnabled();
         submit.textContent = '✨ ダンス動画を生成';
       }
-    });
+    }
 
     function poll(taskId) {
       clearInterval(pollTimer);
@@ -505,24 +734,35 @@
         try {
           const res = await fetch('/status/' + taskId);
           const d = await res.json();
+          if (!res.ok) {
+            const err = new Error(d.error || '生成状況を取得できませんでした');
+            err.code = d.error_code;
+            throw err;
+          }
           if (d.progress != null) setProgress(Math.max(6, Math.min(88, d.progress)));
 
           if (d.status === 'completed' && d.video_url) {
             clearInterval(pollTimer);
             setProgress(90);
-            setStatus('動画に曲を合成しています…', { spin: true });
+            setStatus('完成動画を準備しています…', { spin: true });
             await finalize(taskId);
           } else if (d.status === 'failed') {
             clearInterval(pollTimer);
-            setStatus('⚠️ 生成に失敗しました: ' + (d.error || ''), { error: true });
+            displayApiError('生成に失敗しました。' + (d.error || ''), d.error_code || 'DS-EVOLINK-003');
             showBar(false);
-            submit.disabled = false;
+            isGenerating = false;
+            syncSubmitEnabled();
             submit.textContent = '✨ ダンス動画を生成';
           } else {
             setStatus('AI がダンスを生成しています…', { spin: true });
           }
         } catch (err) {
-          setStatus('状態取得エラー: ' + err.message, { error: true });
+          clearInterval(pollTimer);
+          displayApiError(err.message, err.code || 'DS-STATUS-001');
+          showBar(false);
+          isGenerating = false;
+          syncSubmitEnabled();
+          submit.textContent = '✨ ダンス動画を生成';
         }
       }, 4000);
     }
@@ -531,7 +771,11 @@
       try {
         const res = await fetch('/finalize/' + taskId, { method: 'POST' });
         const d = await res.json();
-        if (!res.ok) throw new Error(d.error || '合成に失敗しました');
+        if (!res.ok) {
+          const err = new Error(d.error || '完成動画を準備できませんでした');
+          err.code = d.error_code;
+          throw err;
+        }
 
         setProgress(100);
         setStatus('✅ 完成しました！', { spin: false });
@@ -540,10 +784,11 @@
         downloadBtn.href = d.download_url;
         downloadBtn.classList.add('show');
       } catch (err) {
-        setStatus('⚠️ ' + err.message, { error: true });
+        displayApiError(err.message, err.code || 'DS-FINALIZE-004');
         showBar(false);
       } finally {
-        submit.disabled = false;
+        isGenerating = false;
+        syncSubmitEnabled();
         submit.textContent = '🔁 もう一度生成';
       }
     }
