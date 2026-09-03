@@ -248,6 +248,14 @@ def create_seedance_job(
         json=payload,
         timeout=60,
     )
+    if not resp.ok:
+        # EvoLink から返ってきた実際のエラー本文（クレジット不足 / 動画形式エラー /
+        # 認証エラー等）をサーバーログに残してから例外化する。原因特定にはこの本文が要。
+        print(
+            f"[EvoLink error] mode={mode} model={model} "
+            f"status={resp.status_code} body={resp.text[:1000]}",
+            flush=True,
+        )
     resp.raise_for_status()
     return resp.json()
 
@@ -515,6 +523,19 @@ def upload():
             prompt, model, api_key, mode, image_url, ref_url, resolution
         )
     except Exception as first_err:  # noqa: BLE001
+        # まず reference-to-video が失敗した理由をログに残す。フォールバックが
+        # 成功するとこの元エラーは握り潰されてしまうため、原因特定にはここが必須。
+        if isinstance(first_err, requests.HTTPError) and first_err.response is not None:
+            print(
+                f"[reference-to-video failed] status={first_err.response.status_code} "
+                f"body={first_err.response.text[:1000]}",
+                flush=True,
+            )
+        else:
+            print(
+                f"[reference-to-video failed] {type(first_err).__name__}: {first_err}",
+                flush=True,
+            )
         # reference-to-video で失敗した場合は、参照動画を外して
         # image-to-video にフォールバックして再試行する。
         can_fallback = ref_url and (
