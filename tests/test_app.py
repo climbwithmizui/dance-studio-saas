@@ -137,6 +137,7 @@ class DanceStudioTestCase(unittest.TestCase):
 
     @patch("app.get_seedance_task")
     def test_failed_status_shows_upstream_error(self, get_seedance_task):
+        # 方針: 生成失敗の理由は隠さず、EvoLink が返した内容を利用者に伝える。
         owner_id = self.create_user("owner@example.com")
         self.login("owner@example.com")
         app_module.JOBS["failed-task"] = {
@@ -155,10 +156,13 @@ class DanceStudioTestCase(unittest.TestCase):
 
         self.assertEqual(response.status_code, 200)
         self.assertEqual(payload["error_code"], "DS-EVOLINK-003")
+        # 失敗理由（EvoLink の原文）が利用者向けレスポンスに含まれること
         self.assertIn("sensitive upstream detail", payload["error"])
+        # 入力素材・api_key はクリーンアップされること
         self.assertIsNone(app_module.JOBS["failed-task"]["api_key"])
 
     def test_tokushoho_page_is_public(self):
+        # 認証不要で表示でき、主要な記載が含まれること
         response = self.client.get("/tokushoho")
         body = response.get_data(as_text=True)
         self.assertEqual(response.status_code, 200)
