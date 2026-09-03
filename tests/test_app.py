@@ -188,6 +188,8 @@ class DanceStudioTestCase(unittest.TestCase):
     def test_login_and_index_link_to_manual_and_tokushoho(self):
         login_body = self.client.get("/login").get_data(as_text=True)
         self.assertIn("/guide", login_body)
+        self.assertIn("/terms", login_body)
+        self.assertIn("/privacy", login_body)
         self.assertIn("/tokushoho", login_body)
 
         self.active_client()
@@ -195,6 +197,42 @@ class DanceStudioTestCase(unittest.TestCase):
         self.assertIn("/guide/evolink-api-key", index_body)
         self.assertIn("/tokushoho", index_body)
         self.assertNotIn("基本は10秒以内", index_body)
+
+    def test_terms_and_privacy_are_public(self):
+        terms_response = self.client.get("/terms")
+        privacy_response = self.client.get("/privacy")
+        terms_body = terms_response.get_data(as_text=True)
+        privacy_body = privacy_response.get_data(as_text=True)
+
+        self.assertEqual(terms_response.status_code, 200)
+        self.assertEqual(privacy_response.status_code, 200)
+        self.assertIn("Dance Studio 利用規約", terms_body)
+        self.assertIn("月額1,980円", terms_body)
+        self.assertIn("/tokushoho", terms_body)
+        self.assertIn("Dance Studio プライバシーポリシー", privacy_body)
+        self.assertIn("永続保存せず", privacy_body)
+        self.assertIn("2026年9月3日", privacy_body)
+
+    def test_terms_and_privacy_links_fall_back_and_allow_overrides(self):
+        self.active_client()
+        with patch.dict(
+            os.environ,
+            {"TERMS_URL": "", "PRIVACY_URL": ""},
+        ):
+            internal_body = self.client.get("/").get_data(as_text=True)
+        self.assertIn('href="/terms"', internal_body)
+        self.assertIn('href="/privacy"', internal_body)
+
+        with patch.dict(
+            os.environ,
+            {
+                "TERMS_URL": "https://example.com/custom-terms",
+                "PRIVACY_URL": "https://example.com/custom-privacy",
+            },
+        ):
+            override_body = self.client.get("/").get_data(as_text=True)
+        self.assertIn("https://example.com/custom-terms", override_body)
+        self.assertIn("https://example.com/custom-privacy", override_body)
 
     def test_missing_stripe_configuration_is_safe(self):
         self.active_client()

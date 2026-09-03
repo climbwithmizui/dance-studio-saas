@@ -445,8 +445,8 @@ def mux_audio_video(video_path: Path, audio_path: Path, out_path: Path) -> Path:
 def index():
     public_links = {
         "guide": os.environ.get("GUIDE_URL") or url_for("guide"),
-        "terms": os.environ.get("TERMS_URL", ""),
-        "privacy": os.environ.get("PRIVACY_URL", ""),
+        "terms": os.environ.get("TERMS_URL") or url_for("terms"),
+        "privacy": os.environ.get("PRIVACY_URL") or url_for("privacy"),
         "cancel": os.environ.get("CANCELLATION_POLICY_URL", ""),
         "support": os.environ.get("SUPPORT_URL", ""),
     }
@@ -457,6 +457,18 @@ def index():
 def tokushoho():
     """特定商取引法に基づく表記（誰でも閲覧できるよう認証不要）。"""
     return render_template("tokushoho.html")
+
+
+@app.route("/terms")
+def terms():
+    """利用規約（購入前でも確認できるよう認証不要）。"""
+    return render_template("terms.html")
+
+
+@app.route("/privacy")
+def privacy():
+    """プライバシーポリシー（購入前でも確認できるよう認証不要）。"""
+    return render_template("privacy.html")
 
 
 @app.route("/guide")
