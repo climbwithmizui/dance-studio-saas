@@ -28,9 +28,11 @@ ffmpeg / ffprobeが必要です。Dockerイメージにはインストール済�
 
 - `/guide`: Dance Studio使い方ガイド
 - `/guide/evolink-api-key`: EvoLink APIキー取得ガイド
+- `/terms`: 利用規約
+- `/privacy`: プライバシーポリシー
 - `/tokushoho`: 特定商取引法に基づく表記
 
-`GUIDE_URL`が未設定の場合、アプリの「使い方ガイド」は内部の`/guide`へリンクします。
+`GUIDE_URL`、`TERMS_URL`、`PRIVACY_URL`が未設定の場合は、それぞれアプリ内の公開ページへリンクします。
 
 ## 生成フロー
 
