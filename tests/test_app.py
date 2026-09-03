@@ -135,6 +135,29 @@ class DanceStudioTestCase(unittest.TestCase):
         self.assertEqual(response.status_code, 403)
         self.assertEqual(response.get_json()["error_code"], "DS-AUTH-002")
 
+    @patch("app.get_seedance_task")
+    def test_failed_status_hides_upstream_error(self, get_seedance_task):
+        owner_id = self.create_user("owner@example.com")
+        self.login("owner@example.com")
+        app_module.JOBS["failed-task"] = {
+            "user_id": owner_id,
+            "api_key": "evk-secret",
+            "asset_paths": [],
+            "song": None,
+        }
+        get_seedance_task.return_value = {
+            "status": "failed",
+            "error": "sensitive upstream detail",
+        }
+
+        response = self.client.get("/status/failed-task")
+        payload = response.get_json()
+
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(payload["error_code"], "DS-EVOLINK-003")
+        self.assertNotIn("sensitive upstream detail", response.get_data(as_text=True))
+        self.assertIsNone(app_module.JOBS["failed-task"]["api_key"])
+
     def test_missing_stripe_configuration_is_safe(self):
         self.active_client()
         old_price = app_module.PRICE_ID
