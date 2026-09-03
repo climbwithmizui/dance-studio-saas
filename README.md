@@ -24,6 +24,14 @@ ffmpeg / ffprobeが必要です。Dockerイメージにはインストール済�
 
 利用者が画面へ入力したEvoLink APIキーはブラウザのlocalStorageへ保存され、生成中のみサーバーのメモリへ保持されます。生成完了または失敗後、サーバー上のキーと一時素材を破棄します。
 
+## 公開ヘルプ
+
+- `/guide`: Dance Studio使い方ガイド
+- `/guide/evolink-api-key`: EvoLink APIキー取得ガイド
+- `/tokushoho`: 特定商取引法に基づく表記
+
+`GUIDE_URL`が未設定の場合、アプリの「使い方ガイド」は内部の`/guide`へリンクします。
+
 ## 生成フロー
 
 1. 利用者がAPIキー、画像、任意の参照動画または曲を選択

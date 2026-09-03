@@ -170,6 +170,32 @@ class DanceStudioTestCase(unittest.TestCase):
         self.assertIn("CLIMB with MIZUI", body)
         self.assertIn("著作権等に関する免責事項", body)
 
+    def test_manual_pages_are_public_and_use_current_limits(self):
+        guide_response = self.client.get("/guide")
+        key_response = self.client.get("/guide/evolink-api-key")
+        guide_body = guide_response.get_data(as_text=True)
+        key_body = key_response.get_data(as_text=True)
+
+        self.assertEqual(guide_response.status_code, 200)
+        self.assertEqual(key_response.status_code, 200)
+        self.assertIn("最大15秒", guide_body)
+        self.assertNotIn("基本10秒以内", guide_body)
+        self.assertIn("PNG / JPG", guide_body)
+        self.assertIn("100MB", guide_body)
+        self.assertIn("https://evolink.ai/dashboard/keys", key_body)
+        self.assertIn("APIキーはサポートへ送らない", key_body)
+
+    def test_login_and_index_link_to_manual_and_tokushoho(self):
+        login_body = self.client.get("/login").get_data(as_text=True)
+        self.assertIn("/guide", login_body)
+        self.assertIn("/tokushoho", login_body)
+
+        self.active_client()
+        index_body = self.client.get("/").get_data(as_text=True)
+        self.assertIn("/guide/evolink-api-key", index_body)
+        self.assertIn("/tokushoho", index_body)
+        self.assertNotIn("基本は10秒以内", index_body)
+
     def test_missing_stripe_configuration_is_safe(self):
         self.active_client()
         old_price = app_module.PRICE_ID

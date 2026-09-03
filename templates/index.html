@@ -343,6 +343,7 @@
           <li>参照ダンスなら15秒以内のMP4、オリジナルダンスなら曲を選択</li>
           <li>権利確認に同意して生成</li>
         </ol>
+        <p class="hint"><a href="{{ url_for('guide') }}">詳しい使い方を見る →</a></p>
       </details>
 
       <!-- STEP 1 : API キー -->
@@ -352,7 +353,7 @@
         <input class="field" type="password" name="api_key" id="api_key" placeholder="sk-..." autocomplete="off" required />
       </div>
       <div class="key-tools"><button type="button" class="btn-text" id="clear-api-key">この端末からAPIキーを削除</button></div>
-      <a class="signup" href="https://evolink.ai" target="_blank" rel="noopener">EvoLinkアカウントを持っていない方はこちらで無料登録 <span class="arrow">→</span></a>
+      <a class="signup" href="{{ url_for('evolink_api_key_guide') }}">EvoLink APIキーの取得方法を見る <span class="arrow">→</span></a>
       <p class="hint">キーはこの端末にのみ保存され、生成時にのみ使用されます。</p>
 
       <!-- STEP 2 : キャラクター画像（必須） -->
@@ -383,15 +384,15 @@
       </div>
       <input type="file" id="reference" name="reference" accept="video/mp4" />
       <div class="key-tools"><button type="button" class="btn-text" id="clear-reference">参照動画を選択解除</button></div>
-      <p class="hint">基本は10秒以内、最大15秒・200MBまでのMP4。10秒を超える素材は1080pをおすすめします。<br>
+      <p class="hint">最大15秒・200MBまでのMP4。使いたい振り付け部分だけを短く切り出すのがおすすめです。<br>
         ・参照動画あり → 720p 自動設定・クレジット約150消費<br>
-        ・参照動画なし → 480p・クレジット約10消費</p>
+        ・参照動画なし → 選択した解像度・クレジット約10〜消費</p>
       <details class="adv guide">
         <summary><span>💡 生成モードとクレジットの目安</span><span class="chev">▼</span></summary>
         <div class="adv-body">
           <ul class="guide-list">
             <li><b>reference-to-video（約150クレジット）</b>：参照動画の振り付けを反映した720p生成</li>
-            <li><b>mini-image-to-video（約10クレジット）</b>：AIにおまかせのオリジナルダンス、480p</li>
+            <li><b>mini-image-to-video（約10クレジット〜）</b>：AIにおまかせのオリジナルダンス、480p / 720p / 1080pから選択</li>
             <li>720p版の方が、振り付けの再現度・画質ともに高くなります。</li>
           </ul>
         </div>

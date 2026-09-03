@@ -1,0 +1,69 @@
+{% extends "help_base.html" %}
+{% block title %}EvoLink APIキー取得ガイド{% endblock %}
+{% block content %}
+  <div class="eyebrow">EVOLINK START GUIDE</div>
+  <h1>EvoLink APIキーの取得方法</h1>
+  <p class="lead">Dance Studioで動画を生成するには、ご自身のEvoLinkアカウント、APIキー、生成クレジットが必要です。</p>
+
+  <div class="callout warning">
+    <strong>APIキーはパスワードと同じように扱ってください。</strong><br>
+    他人へ送ったり、SNSへ載せたりしないでください。APIキーはサポートへ送らないでください。
+  </div>
+
+  <ol class="steps">
+    <li>
+      <strong>EvoLinkのAPIキー管理画面を開く</strong>
+      下の公式リンクを開きます。ログインしていない場合は、登録またはログイン画面が表示されます。
+      <div class="actions">
+        <a class="button primary" href="https://evolink.ai/dashboard/keys" target="_blank" rel="noopener noreferrer">EvoLink APIキー管理画面を開く</a>
+      </div>
+    </li>
+    <li>
+      <strong>EvoLinkへ登録またはログインする</strong>
+      画面の案内に沿ってアカウントを準備します。登録済みなら、そのアカウントでログインしてください。
+    </li>
+    <li>
+      <strong>API Keysで新しいキーを作成する</strong>
+      ダッシュボードの「API Keys」を開き、「Create New Key」などの新規作成ボタンを押します。画面名はEvoLinkの更新で変わる場合があります。
+    </li>
+    <li>
+      <strong>表示されたAPIキーをコピーする</strong>
+      コピーしたキーは安全な場所へ保管します。キーそのものをこのマニュアルや問い合わせ文へ貼り付けないでください。
+    </li>
+    <li>
+      <strong>Dance Studioへ貼り付ける</strong>
+      Dance Studioの「STEP 1 EvoLink APIキー」欄へ貼り付けます。前後に空白が入らないよう確認してください。
+      <div class="actions">
+        <a class="button" href="{{ url_for('index') }}">Dance Studioを開く</a>
+      </div>
+    </li>
+    <li>
+      <strong>生成前にクレジット残高を確認する</strong>
+      Dance Studioの月額料金にEvoLinkクレジットは含まれません。不足している場合は、EvoLink側で追加してください。
+      <div class="actions">
+        <a class="button" href="https://evolink.ai/dashboard/billing" target="_blank" rel="noopener noreferrer">EvoLinkの請求・残高画面を開く</a>
+      </div>
+    </li>
+  </ol>
+
+  <h2>APIキーの保存と削除</h2>
+  <p>Dance Studioは、入力したキーを現在使用しているブラウザ内に保存します。生成処理中はサーバーへ送信されますが、生成完了または失敗後に一時データから削除されます。</p>
+  <p>共用端末を使った場合は、Dance Studio画面の「この端末からAPIキーを削除」を必ず押してください。</p>
+
+  <h2>うまくいかないとき</h2>
+  <h3>「APIキーが無効です」と表示される</h3>
+  <ul>
+    <li>コピー時に前後の空白が入っていないか確認します。</li>
+    <li>EvoLinkのAPI Keys画面で、キーが有効か確認します。</li>
+    <li>解決しない場合は、EvoLinkで新しいキーを作成して入れ直します。</li>
+  </ul>
+
+  <h3>クレジット不足と表示される</h3>
+  <p>EvoLinkの残高を追加し、反映後にもう一度生成してください。Dance Studioが自動的に安い生成方式へ切り替えることはありません。</p>
+
+  <div class="callout">
+    EvoLinkの画面構成やボタン名は変更されることがあります。見つからない場合は、公式ダッシュボード内の「API Keys」またはキー管理メニューを探してください。
+  </div>
+
+  <p><small>確認元：EvoLink公式ダッシュボード・公式APIドキュメント（2026年9月3日確認）</small></p>
+{% endblock %}
