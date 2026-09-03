@@ -453,6 +453,12 @@ def index():
     return render_template("index.html", public_links=public_links)
 
 
+@app.route("/tokushoho")
+def tokushoho():
+    """特定商取引法に基づく表記（誰でも閲覧できるよう認証不要）。"""
+    return render_template("tokushoho.html")
+
+
 # ----------------------------------------------------------------------------
 # 認証ルート
 # ----------------------------------------------------------------------------
@@ -816,14 +822,18 @@ def status(task_id):
         )
 
     results = data.get("results") or []
-    safe_error = None
+    task_error = None
     error_code = None
     if data.get("status") == "failed":
+        raw_error = data.get("error")
         print(
-            f"[EvoLink task failed] task={task_id} error={data.get('error')}",
+            f"[EvoLink task failed] task={task_id} error={raw_error}",
             flush=True,
         )
-        safe_error = "EvoLinkで生成処理に失敗しました。時間をおいて再度お試しください。"
+        # 方針: 生成失敗の理由は隠さず、EvoLink が返した内容を添えて利用者に伝える。
+        # （運営側の内部事情を隠す必要はないため。原文はサーバーログにも残す）
+        detail = str(raw_error).strip() if raw_error else "詳細不明"
+        task_error = f"EvoLinkからの失敗理由: {detail}"
         error_code = "DS-EVOLINK-003"
         cleanup_job_inputs(job)
     return jsonify(
@@ -832,7 +842,7 @@ def status(task_id):
             "status": data.get("status"),
             "progress": data.get("progress"),
             "video_url": results[0] if results else None,
-            "error": safe_error,
+            "error": task_error,
             "error_code": error_code,
         }
     )

@@ -1,0 +1,107 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>特定商取引法に基づく表記 — Dance Studio</title>
+  <style>
+    body {
+      font-family: "Noto Sans JP", -apple-system, BlinkMacSystemFont, sans-serif;
+      background: linear-gradient(160deg, #fbfdff 0%, #eef3fa 45%, #e4ecf7 100%);
+      background-attachment: fixed;
+      min-height: 100vh; margin: 0; padding: 28px 16px;
+      color: #2a3441;
+    }
+    .card {
+      width: 100%; max-width: 640px; margin: 0 auto; background: #fff;
+      padding: 32px 28px; border-radius: 18px;
+      box-shadow: 0 18px 50px -18px rgba(70,110,170,.45);
+    }
+    h1 { font-size: 22px; margin: 0 0 6px; text-align: center; }
+    p.sub { text-align: center; color: #7b8797; font-size: 13px; margin: 0 0 24px; }
+    h2 {
+      font-size: 16px; margin: 28px 0 12px; padding-bottom: 8px;
+      border-bottom: 2px solid rgba(120,150,190,.22); color: #3f7fe0;
+    }
+    dl { margin: 0; }
+    dt {
+      font-size: 13px; font-weight: 700; color: #2a3441;
+      margin: 16px 0 4px;
+    }
+    dd {
+      margin: 0; font-size: 14px; line-height: 1.7; color: #3a4552;
+    }
+    dd .note {
+      display: block; font-size: 12.5px; color: #7b8797; margin-top: 2px;
+    }
+    dd a { color: #3f7fe0; text-decoration: none; }
+    .disclaimer p {
+      font-size: 13.5px; line-height: 1.85; color: #3a4552; margin: 0 0 14px;
+    }
+    .foot { text-align: center; margin-top: 30px; font-size: 13px; }
+    .foot a { color: #3f7fe0; font-weight: 700; text-decoration: none; }
+    footer { text-align: center; margin-top: 22px; font-size: 11px; color: #9aa6b6; }
+  </style>
+</head>
+<body>
+  <div class="card">
+    <h1>特定商取引法に基づく表記</h1>
+    <p class="sub">Specified Commercial Transactions Act</p>
+
+    <dl>
+      <dt>販売業者</dt>
+      <dd>仲西彬</dd>
+
+      <dt>屋号</dt>
+      <dd>CLIMB with MIZUI</dd>
+
+      <dt>運営統括責任者</dt>
+      <dd>仲西彬</dd>
+
+      <dt>所在地</dt>
+      <dd>沖縄県うるま市西原81-2 カーサミニヨン203</dd>
+
+      <dt>電話番号</dt>
+      <dd><a href="tel:080-6497-9240">080-6497-9240</a></dd>
+
+      <dt>メールアドレス</dt>
+      <dd><a href="mailto:climb.with.mizui@gmail.com">climb.with.mizui@gmail.com</a></dd>
+
+      <dt>販売価格</dt>
+      <dd>月額1,980円（税込）
+        <span class="note">※EvoLinkの生成クレジットは別途ユーザー負担（Seedance API利用料）</span>
+      </dd>
+
+      <dt>お支払方法</dt>
+      <dd>クレジットカード決済（Stripe）</dd>
+
+      <dt>お支払時期</dt>
+      <dd>ご登録日を起算日として、毎月自動課金
+        <span class="note">※初回はお申込み時に決済</span>
+      </dd>
+
+      <dt>サービス提供時期</dt>
+      <dd>決済完了後、即時利用可能</dd>
+
+      <dt>返品・キャンセルについて</dt>
+      <dd>デジタルサービスの性質上、生成済みコンテンツについての返品はお受けできません。月額サブスクリプションはマイページよりいつでも解約可能で、解約後は次回請求が発生しません（日割り返金は行いません）。</dd>
+    </dl>
+
+    <h2>著作権等に関する免責事項</h2>
+    <div class="disclaimer">
+      <p>本サービスは、利用者ご自身がアップロードする画像・参照動画等の素材について、利用者自身のオリジナル素材であること、または権利者本人から明確な使用許可を得た素材であることの確認・同意を得たうえで生成処理を行っています。</p>
+      <p>利用者が本サービスを通じてアップロードした素材、および生成されたコンテンツの利用に起因して、第三者の著作権・肖像権その他の権利を侵害する事態が生じた場合、その責任は当該利用者に帰属するものとし、当社は一切の責任を負いません。</p>
+      <p>利用者は、本サービスの利用にあたり、著作権法その他関連法令を遵守するものとし、これに違反したことにより生じた損害・紛争等について、当社を免責し補償するものとします。</p>
+    </div>
+
+    <h2>動作環境</h2>
+    <dl>
+      <dt>推奨ブラウザ</dt>
+      <dd>最新版のChrome / Safari / Edge推奨</dd>
+    </dl>
+
+    <p class="foot"><a href="{{ url_for('index') }}">← トップに戻る</a></p>
+    <footer>CLIMB with MIZUI © 2026</footer>
+  </div>
+</body>
+</html>
