@@ -170,11 +170,17 @@ class DanceStudioTestCase(unittest.TestCase):
         self.assertIn("CLIMB with MIZUI", body)
         self.assertIn("著作権等に関する免責事項", body)
 
-    def test_manual_pages_require_active_subscription(self):
+    def test_public_guide_hides_details_and_api_guide_requires_subscription(self):
         guide_response = self.client.get("/guide")
         key_response = self.client.get("/guide/evolink-api-key")
-        self.assertEqual(guide_response.status_code, 302)
-        self.assertIn("/login", guide_response.headers["Location"])
+        guide_body = guide_response.get_data(as_text=True)
+        self.assertEqual(guide_response.status_code, 200)
+        self.assertIn("STEP 1：利用準備", guide_body)
+        self.assertIn("2つの生成方法", guide_body)
+        self.assertIn("月額1,980円", guide_body)
+        self.assertNotIn("EvoLink", guide_body)
+        self.assertNotIn("PNG / JPG", guide_body)
+        self.assertNotIn("APIキー取得ガイド", guide_body)
         self.assertEqual(key_response.status_code, 302)
         self.assertIn("/login", key_response.headers["Location"])
 
@@ -182,8 +188,8 @@ class DanceStudioTestCase(unittest.TestCase):
         self.login()
         free_guide = self.client.get("/guide")
         free_key = self.client.get("/guide/evolink-api-key")
-        self.assertEqual(free_guide.status_code, 302)
-        self.assertTrue(free_guide.headers["Location"].endswith("/"))
+        self.assertEqual(free_guide.status_code, 200)
+        self.assertNotIn("PNG / JPG", free_guide.get_data(as_text=True))
         self.assertEqual(free_key.status_code, 302)
         self.assertTrue(free_key.headers["Location"].endswith("/"))
 
@@ -198,18 +204,18 @@ class DanceStudioTestCase(unittest.TestCase):
         key_body = active_key.get_data(as_text=True)
         self.assertEqual(active_guide.status_code, 200)
         self.assertEqual(active_key.status_code, 200)
-        self.assertIn("最大15秒", guide_body)
-        self.assertNotIn("基本10秒以内", guide_body)
+        self.assertIn("15秒・200MB", guide_body)
         self.assertIn("PNG / JPG", guide_body)
         self.assertIn("100MB", guide_body)
+        self.assertIn("トラブルシューティング", guide_body)
         self.assertIn("https://evolink.ai/dashboard/keys", key_body)
         self.assertIn("APIキーはサポートへ送らない", key_body)
 
-    def test_public_auth_pages_hide_manual_links_and_provider_name(self):
+    def test_public_auth_pages_link_to_overview_guide(self):
         login_body = self.client.get("/login").get_data(as_text=True)
         signup_body = self.client.get("/signup").get_data(as_text=True)
-        self.assertNotIn("/guide", login_body)
-        self.assertNotIn("/guide", signup_body)
+        self.assertIn("/guide", login_body)
+        self.assertIn("/guide", signup_body)
         self.assertIn("/terms", login_body)
         self.assertIn("/privacy", login_body)
         self.assertIn("/tokushoho", login_body)
@@ -217,7 +223,7 @@ class DanceStudioTestCase(unittest.TestCase):
         self.create_user(active=False)
         self.login()
         free_index = self.client.get("/").get_data(as_text=True)
-        self.assertNotIn('href="/guide"', free_index)
+        self.assertIn('href="/guide"', free_index)
         self.assertNotIn("EvoLink", free_index)
         self.assertIn("外部サービス", free_index)
         self.assertIn("/tokushoho", free_index)
@@ -244,9 +250,9 @@ class DanceStudioTestCase(unittest.TestCase):
         self.assertIn("Dance Studio プライバシーポリシー", privacy_body)
         self.assertIn("永続保存せず", privacy_body)
         self.assertIn("2026年9月3日", privacy_body)
-        self.assertNotIn("EvoLink", terms_body)
-        self.assertNotIn("Seedance", terms_body)
-        self.assertNotIn("EvoLink", privacy_body)
+        self.assertIn("EvoLink", terms_body)
+        self.assertIn("Seedance", terms_body)
+        self.assertIn("EvoLink", privacy_body)
 
     def test_terms_and_privacy_links_fall_back_and_allow_overrides(self):
         self.active_client()
