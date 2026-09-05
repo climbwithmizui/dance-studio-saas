@@ -94,8 +94,10 @@
   <main class="shell">
     <nav class="top-nav" aria-label="ヘルプメニュー">
       <a href="{{ url_for('index') }}">Dance Studio</a>
+      {% if current_user.is_authenticated and current_user.subscription_status == 'active' %}
       <a href="{{ url_for('guide') }}">使い方ガイド</a>
       <a href="{{ url_for('evolink_api_key_guide') }}">APIキー取得</a>
+      {% endif %}
       <a href="{{ url_for('terms') }}">利用規約</a>
       <a href="{{ url_for('privacy') }}">プライバシー</a>
       <a href="{{ url_for('tokushoho') }}">特商法表記</a>
