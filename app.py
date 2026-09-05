@@ -471,9 +471,20 @@ def privacy():
     return render_template("privacy.html")
 
 
+def require_active_subscription():
+    """有効な契約がない利用者を、課金案内のあるトップへ戻す。"""
+    if current_user.subscription_status != "active":
+        return redirect(url_for("index"))
+    return None
+
+
 @app.route("/guide")
+@login_required
 def guide():
-    """Dance Studioの使い方ガイド。購入前でも確認できるよう認証不要。"""
+    """使い方ガイド。ログイン済みの有料契約者だけが閲覧できる。"""
+    denied = require_active_subscription()
+    if denied:
+        return denied
     return render_template(
         "guide.html",
         support_url=os.environ.get("SUPPORT_URL", ""),
@@ -481,8 +492,12 @@ def guide():
 
 
 @app.route("/guide/evolink-api-key")
+@login_required
 def evolink_api_key_guide():
-    """EvoLink APIキー取得ガイド。購入前でも確認できるよう認証不要。"""
+    """APIキー取得ガイド。ログイン済みの有料契約者だけが閲覧できる。"""
+    denied = require_active_subscription()
+    if denied:
+        return denied
     return render_template("evolink_api_key_guide.html")
 
 
