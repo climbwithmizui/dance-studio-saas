@@ -465,7 +465,7 @@
 
   <footer>
     <div class="footer-links">
-      {% if current_user.subscription_status == 'active' and public_links.guide %}<a href="{{ public_links.guide }}" target="_blank" rel="noopener">使い方ガイド</a>{% endif %}
+      {% if public_links.guide %}<a href="{{ public_links.guide }}" target="_blank" rel="noopener">使い方ガイド</a>{% endif %}
       {% if public_links.terms %}<a href="{{ public_links.terms }}" target="_blank" rel="noopener">利用規約</a>{% endif %}
       {% if public_links.privacy %}<a href="{{ public_links.privacy }}" target="_blank" rel="noopener">プライバシー</a>{% endif %}
       {% if public_links.cancel %}<a href="{{ public_links.cancel }}" target="_blank" rel="noopener">解約・返金</a>{% endif %}
