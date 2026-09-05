@@ -479,15 +479,15 @@ def require_active_subscription():
 
 
 @app.route("/guide")
-@login_required
 def guide():
-    """使い方ガイド。ログイン済みの有料契約者だけが閲覧できる。"""
-    denied = require_active_subscription()
-    if denied:
-        return denied
+    """概要は公開し、具体的な設定・トラブル対応は有料契約者だけに表示。"""
     return render_template(
         "guide.html",
         support_url=os.environ.get("SUPPORT_URL", ""),
+        show_member_details=(
+            current_user.is_authenticated
+            and current_user.subscription_status == "active"
+        ),
     )
 
 
