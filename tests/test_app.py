@@ -169,6 +169,8 @@ class DanceStudioTestCase(unittest.TestCase):
         self.assertIn("特定商取引法に基づく表記", body)
         self.assertIn("CLIMB with MIZUI", body)
         self.assertIn("著作権等に関する免責事項", body)
+        self.assertIn("EvoLink", body)
+        self.assertIn("Seedance API利用料", body)
 
     def test_public_guide_hides_details_and_api_guide_requires_subscription(self):
         guide_response = self.client.get("/guide")
@@ -250,9 +252,14 @@ class DanceStudioTestCase(unittest.TestCase):
         self.assertIn("Dance Studio プライバシーポリシー", privacy_body)
         self.assertIn("永続保存せず", privacy_body)
         self.assertIn("2026年9月3日", privacy_body)
-        self.assertIn("EvoLink", terms_body)
-        self.assertIn("Seedance", terms_body)
-        self.assertIn("EvoLink", privacy_body)
+        self.assertNotIn("EvoLink", terms_body)
+        self.assertNotIn("Seedance", terms_body)
+        self.assertNotIn("APIキー", terms_body)
+        self.assertNotIn("EvoLink", privacy_body)
+        self.assertNotIn("Neon", privacy_body)
+        self.assertNotIn("APIキー", privacy_body)
+        self.assertIn("外部AI生成サービス", terms_body)
+        self.assertIn("クラウドインフラ", privacy_body)
 
     def test_terms_and_privacy_links_fall_back_and_allow_overrides(self):
         self.active_client()
